@@ -61,9 +61,11 @@ check('sort mem puts memhog first', 'memhog', btop_top_procs($a0, $a1, 0.5, 5, 1
 // --- v2: config validation ---
 check('cfg defaults (empty input)', [
     'SHOW_LOAD' => 'yes', 'SHOW_TEMP' => 'yes', 'SHOW_UPTIME' => 'no',
-    'SHOW_DISKIO' => 'no', 'SHOW_NET' => 'no', 'SHOW_PROCS' => 'yes',
-    'PROC_SORT' => 'cpu', 'PROC_COUNT' => 5, 'REFRESH_MS' => 3000,
+    'SHOW_NPROCS' => 'no', 'SHOW_DISKIO' => 'no', 'SHOW_NET' => 'no',
+    'SHOW_PROCS' => 'yes', 'PROC_SORT' => 'cpu', 'PROC_COUNT' => 5,
+    'REFRESH_MS' => 3000,
 ], btop_validate_cfg([]));
+check('cfg nprocs toggle independent from uptime', 'yes', btop_validate_cfg(['SHOW_NPROCS' => 'yes'])['SHOW_NPROCS']);
 check('cfg invalid bool falls back to default', 'yes', btop_validate_cfg(['SHOW_LOAD' => 'maybe'])['SHOW_LOAD']);
 check('cfg valid toggle kept', 'yes', btop_validate_cfg(['SHOW_DISKIO' => 'yes'])['SHOW_DISKIO']);
 check('cfg invalid sort falls back to cpu', 'cpu', btop_validate_cfg(['PROC_SORT' => 'disk'])['PROC_SORT']);

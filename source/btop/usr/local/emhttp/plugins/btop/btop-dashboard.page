@@ -12,7 +12,7 @@ $btop_cfg = btop_read_cfg();
 $btop_header = '';
 if ($btop_cfg['SHOW_LOAD'] === 'yes') $btop_header .= '<span id="btop-load">_(Loading)_&hellip;</span>';
 if ($btop_cfg['SHOW_TEMP'] === 'yes') $btop_header .= '<span id="btop-temp"></span>';
-if ($btop_cfg['SHOW_UPTIME'] === 'yes') $btop_header .= '<span id="btop-uptime"></span>';
+if ($btop_cfg['SHOW_UPTIME'] === 'yes' || $btop_cfg['SHOW_NPROCS'] === 'yes') $btop_header .= '<span id="btop-uptime"></span>';
 
 $btop_rates = ($btop_cfg['SHOW_DISKIO'] === 'yes' || $btop_cfg['SHOW_NET'] === 'yes')
     ? '<tr><td><div id="btop-rates"></div></td></tr>' : '';

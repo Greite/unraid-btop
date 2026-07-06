@@ -29,11 +29,18 @@ _(Show CPU temperature)_:
 > Shows the CPU package temperature in the tile header, read from the motherboard sensors (coretemp, k10temp, zenpower). Hidden automatically if no known sensor is found.
 :end
 
-_(Show uptime and process count)_:
+_(Show uptime)_:
 : <select name="SHOW_UPTIME"><option value="yes"<?=btop_sel($btop_cfg['SHOW_UPTIME'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_UPTIME'], 'no')?>>_(No)_</option></select>
 
 :btop_show_uptime_plug:
-> Shows the system uptime and the total number of running processes in the tile header.
+> Shows the system uptime in the tile header.
+:end
+
+_(Show process count)_:
+: <select name="SHOW_NPROCS"><option value="yes"<?=btop_sel($btop_cfg['SHOW_NPROCS'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_NPROCS'], 'no')?>>_(No)_</option></select>
+
+:btop_show_nprocs_plug:
+> Shows the total number of running processes in the tile header.
 :end
 
 _(Show aggregated disk I/O rates)_:

@@ -17,7 +17,7 @@ if ($cfg['SHOW_UPTIME'] === 'yes') $out['uptime'] = btop_read_uptime('/proc');
 $wantProcs = $cfg['SHOW_PROCS'] === 'yes';
 $wantDisk = $cfg['SHOW_DISKIO'] === 'yes';
 $wantNet = $cfg['SHOW_NET'] === 'yes';
-$wantUptime = $cfg['SHOW_UPTIME'] === 'yes';
+$wantNprocs = $cfg['SHOW_NPROCS'] === 'yes';
 
 $procs1 = null;
 if ($wantProcs || $wantDisk || $wantNet) {
@@ -25,7 +25,7 @@ if ($wantProcs || $wantDisk || $wantNet) {
     $disk0 = $wantDisk ? btop_sample_diskio('/proc') : null;
     $net0 = $wantNet ? btop_sample_net('/sys/class/net') : null;
     usleep(500000);
-    $procs1 = ($wantProcs || $wantUptime) ? btop_sample_procs('/proc') : null;
+    $procs1 = ($wantProcs || $wantNprocs) ? btop_sample_procs('/proc') : null;
     $disk1 = $wantDisk ? btop_sample_diskio('/proc') : null;
     $net1 = $wantNet ? btop_sample_net('/sys/class/net') : null;
 
@@ -44,10 +44,10 @@ if ($wantProcs || $wantDisk || $wantNet) {
             'tx_bps' => (int)(($net1['tx'] - $net0['tx']) / 0.5),
         ] : null;
     }
-} elseif ($wantUptime) {
+} elseif ($wantNprocs) {
     $procs1 = btop_sample_procs('/proc');
 }
 
-if ($wantUptime) $out['nprocs'] = $procs1 !== null ? count($procs1) : null;
+if ($wantNprocs) $out['nprocs'] = $procs1 !== null ? count($procs1) : null;
 
 echo json_encode($out);

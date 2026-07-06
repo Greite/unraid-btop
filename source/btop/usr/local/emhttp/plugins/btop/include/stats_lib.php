@@ -124,6 +124,7 @@ function btop_validate_cfg(array $raw): array {
         'SHOW_LOAD'   => $bool($raw['SHOW_LOAD']   ?? null, 'yes'),
         'SHOW_TEMP'   => $bool($raw['SHOW_TEMP']   ?? null, 'yes'),
         'SHOW_UPTIME' => $bool($raw['SHOW_UPTIME'] ?? null, 'no'),
+        'SHOW_NPROCS' => $bool($raw['SHOW_NPROCS'] ?? null, 'no'),
         'SHOW_DISKIO' => $bool($raw['SHOW_DISKIO'] ?? null, 'no'),
         'SHOW_NET'    => $bool($raw['SHOW_NET']    ?? null, 'no'),
         'SHOW_PROCS'  => $bool($raw['SHOW_PROCS']  ?? null, 'yes'),
