@@ -28,6 +28,7 @@ Version minimale d'Unraid : **6.12.0** (nouveau dashboard à tuiles + infra `log
 | Nom du paquet Slackware | `unraid.btop` (préfixé, comme `intel.gpu.top` d'ich777) | `btop` nu (conflit avec le paquet NerdTools) |
 | Versioning | Date (`YYYY.MM.DD`), convention plugins Unraid | SemVer |
 | Hébergement des paquets | GitHub Releases (+ MD5 dans le `.plg`) | `.txz` committés dans le repo |
+| CI | GitHub Actions : release automatisée + suivi automatique des versions btop upstream (full-auto, gardé par un smoke test) | Build manuel ; PR d'approbation avant chaque release |
 
 ## 3. Architecture
 
@@ -36,6 +37,11 @@ Version minimale d'Unraid : **6.12.0** (nouveau dashboard à tuiles + infra `log
 ```
 unraid-btop/
 ├── btop.plg                        # fichier plugin XML (racine)
+├── BTOP_VERSION                    # version btop actuellement packagée (lue/écrite par la CI)
+├── .github/workflows/
+│   ├── release.yml                 # build + smoke test + GitHub Release + bump du .plg
+│   ├── check-btop-update.yml       # cron quotidien : détecte les nouvelles releases btop
+│   └── ci.yml                      # sur PR : build.sh sans release (vérification)
 ├── source/btop/usr/
 │   ├── bin/                        # btop (injecté au build, non committé)
 │   ├── share/btop/themes/          # thèmes officiels (injectés au build)
@@ -133,7 +139,38 @@ Entrée : `tag=btop` uniquement (liste blanche stricte — toute autre valeur = 
 - ajout de la ligne correspondante dans le README de `unraid-templates` ;
 - point d'attention : les modérateurs CA peuvent exiger un thread de support sur le forum Unraid pour les plugins — à créer au moment de la soumission si demandé.
 
-## 5. Gestion d'erreurs
+## 5. CI & automatisation des releases
+
+Objectif : quand btop publie une nouvelle version upstream, le plugin se rebuild, se teste et se publie **sans intervention manuelle** ; les utilisateurs reçoivent la mise à jour via le mécanisme natif d'Unraid (re-lecture quotidienne du `.plg` distant).
+
+### 5.1 `release.yml`
+
+Déclencheurs : `workflow_dispatch` (input : version btop, défaut = latest) et appel par `check-btop-update.yml`. Étapes :
+
+1. résout la version btop cible via l'API GitHub (`aristocratos/btop`) ;
+2. télécharge l'asset officiel `btop-x86_64-linux-musl.tbz` de cette release ; vérifie le checksum publié par upstream s'il existe, sinon calcule et consigne le SHA256 dans les notes de release (traçabilité) ;
+3. **smoke test** : exécute `./btop --version` sur le runner (binaire statique → tourne sur ubuntu-latest) et vérifie que la version rapportée correspond à la cible ; tout échec stoppe le workflow avant toute publication ;
+4. `build.sh` : construit `unraid.btop-<version-plugin>.txz` + `.md5` (version plugin = date UTC `YYYY.MM.DD`, suffixe `a`, `b`… si une release existe déjà ce jour-là) ;
+5. crée la GitHub Release taguée avec les artefacts ;
+6. met à jour sur `main` : entités `version`/`md5` du `btop.plg`, entrée `<CHANGES>` (« Update btop to vX.Y.Z »), fichier `BTOP_VERSION` — commit via `GITHUB_TOKEN` (permission `contents: write`).
+
+L'ordre 5→6 garantit qu'un `.plg` pointant sur la nouvelle version n'est jamais publié avant que les artefacts existent.
+
+### 5.2 `check-btop-update.yml`
+
+Cron quotidien (+ `workflow_dispatch`) :
+
+1. lit `BTOP_VERSION` ;
+2. compare avec `releases/latest` de `aristocratos/btop` ;
+3. si différent → déclenche `release.yml` avec la nouvelle version.
+
+En cas d'échec (asset musl absent, format changé…), aucune release partielle n'est créée et GitHub notifie l'auteur de l'échec du workflow.
+
+### 5.3 `ci.yml`
+
+Sur PR et push de branche : exécute `build.sh` + smoke test, sans release ni commit — vérifie que le packaging reste fonctionnel.
+
+## 6. Gestion d'erreurs
 
 | Situation | Comportement |
 | --- | --- |
@@ -146,9 +183,9 @@ Entrée : `tag=btop` uniquement (liste blanche stricte — toute autre valeur = 
 | Téléchargement `.txz` échoué / MD5 invalide | Le système de plugins Unraid annule l'installation (comportement natif du `.plg`) |
 | Désinstallation | Session tuée, paquet retiré, config utilisateur conservée sur la flash |
 
-## 6. Tests & validation
+## 7. Tests & validation
 
-1. **Build** : `scripts/build.sh` reproductible — vérifie le checksum du binaire upstream, produit `.txz` + `.md5` ; contrôle `tar -tf` du contenu attendu.
+1. **Build** : `scripts/build.sh` reproductible — vérifie le checksum du binaire upstream quand il est publié (sinon consigne le SHA256 calculé), produit `.txz` + `.md5` ; contrôle `tar -tf` du contenu attendu. Exécuté par la CI sur chaque PR (`ci.yml`) et à chaque release (`release.yml`, avec smoke test du binaire).
 2. **Test sur serveur réel** (le serveur Unraid de l'utilisateur) :
    - install via URL du `.plg` (branche de test) ;
    - tuile visible sur le dashboard : load, temp, top 5 processus cohérents avec `htop`/`btop`, refresh ~3 s ;
@@ -157,9 +194,9 @@ Entrée : `tag=btop` uniquement (liste blanche stricte — toute autre valeur = 
    - `btop` fonctionne en SSH et via le web terminal ;
    - reboot → plugin réinstallé automatiquement, config CLI conservée ;
    - désinstallation → plus de tuile, plus de binaire, plus de processus ttyd résiduels.
-3. Pas de CI en v1 ; une GitHub Action de packaging des releases pourra venir plus tard.
+3. **Mise à jour auto** : après la première release en CI, déclencher manuellement `check-btop-update.yml` pour valider le circuit complet (détection → release → notification de mise à jour visible sur le serveur).
 
-## 7. Hors scope (v1)
+## 8. Hors scope (v1)
 
 - Mode iframe « btop live » dans la tuile (écarté au profit de la tuile native ; possible en v2 commutable) ;
 - page de settings (nombre de processus affichés, intervalle de refresh) — valeurs fixes en v1 (5 processus, 3 s) ;
