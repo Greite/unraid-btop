@@ -1,0 +1,42 @@
+Menu="Dashboard:0"
+Icon="btop.png"
+Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0','>=')"
+---
+<?php
+/* btop dashboard tile: load average, CPU temperature and top processes.
+   Content is rendered client-side by scripts/btop-tile.js polling
+   include/stats.php every 3 seconds. */
+$mytiles['btop']['column1'] = <<<'EOT'
+<tbody id="tblBtopDash" title="_(btop system monitor)_">
+<tr>
+  <td>
+    <span class="tile-header">
+      <span class="tile-header-left">
+        <img src="/plugins/btop/images/btop.png" style="width:32px;height:32px">
+        <div class="section">_(btop)_<br>
+          <span id="btop-load">_(Loading)_&hellip;</span>
+          <span id="btop-temp"></span>
+        </div>
+      </span>
+      <span class="tile-header-right">
+        <span class="tile-header-right-controls">
+          <a href="#" id="btop-fullscreen" title="_(Open btop fullscreen)_">
+            <i class="fa fa-fw fa-expand control"></i>
+          </a>
+        </span>
+      </span>
+    </span>
+  </td>
+</tr>
+<tr class="header">
+  <td>
+    <span class="w44">_(Process)_</span>
+    <span class="w18">_(CPU)_</span>
+    <span class="w18">_(Memory)_</span>
+  </td>
+</tr>
+<tr><td><div id="btop-procs"></div></td></tr>
+</tbody>
+EOT;
+?>
+<script src="/plugins/btop/scripts/btop-tile.js"></script>
