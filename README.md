@@ -3,6 +3,14 @@
 Unraid plugin for [btop](https://github.com/aristocratos/btop): the btop
 resource monitor in your terminal, plus a native dashboard tile.
 
+> **Attribution:** I am **not** the author of btop. btop is created and
+> maintained by [aristocratos](https://github.com/aristocratos) and its
+> contributors — all credit for the monitor itself goes to them. This
+> repository is only an **Unraid integration**: it packages the official
+> btop binary and adds a dashboard widget and plugin plumbing around it.
+> Report btop bugs [upstream](https://github.com/aristocratos/btop/issues);
+> report integration issues [here](https://github.com/Greite/unraid-btop/issues).
+
 ## Features
 
 - **`btop` CLI** available in SSH and the Unraid web terminal, with settings
@@ -42,7 +50,12 @@ Releases are fully automated: `check-btop-update.yml` (daily cron) detects new
 btop releases and triggers `release.yml`, which builds, smoke tests, publishes
 the GitHub Release and bumps `btop.plg` + `BTOP_VERSION` on `main`.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). TL;DR: plugin/integration issues here,
+btop issues upstream, and never bump `btop.plg` manually — CI owns releases.
+
 ## License
 
-Plugin code: MIT. btop itself is Apache-2.0 (its LICENSE ships in the package
-at `/usr/share/btop/LICENSE`).
+Plugin code: [MIT](LICENSE). btop itself is Apache-2.0 (its LICENSE ships in
+the package at `/usr/share/btop/LICENSE`).
