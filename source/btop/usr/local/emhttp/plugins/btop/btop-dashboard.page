@@ -3,10 +3,25 @@ Icon="btop.png"
 Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0','>=')"
 ---
 <?php
-/* btop dashboard tile: load average, CPU temperature and top processes.
-   Content is rendered client-side by scripts/btop-tile.js polling
-   include/stats.php every 3 seconds. */
-$mytiles['btop']['column1'] = <<<'EOT'
+/* btop dashboard tile. Sections are enabled/disabled from the settings page
+   (Settings > User Utilities > btop). Content is rendered client-side by
+   scripts/btop-tile.js polling include/stats.php. */
+require_once '/usr/local/emhttp/plugins/btop/include/stats_lib.php';
+$btop_cfg = btop_validate_cfg(parse_plugin_cfg('btop', true));
+
+$btop_header = '';
+if ($btop_cfg['SHOW_LOAD'] === 'yes') $btop_header .= '<span id="btop-load">_(Loading)_&hellip;</span>';
+if ($btop_cfg['SHOW_TEMP'] === 'yes') $btop_header .= '<span id="btop-temp"></span>';
+if ($btop_cfg['SHOW_UPTIME'] === 'yes') $btop_header .= '<span id="btop-uptime"></span>';
+
+$btop_rates = ($btop_cfg['SHOW_DISKIO'] === 'yes' || $btop_cfg['SHOW_NET'] === 'yes')
+    ? '<tr><td><div id="btop-rates"></div></td></tr>' : '';
+
+$btop_procs = $btop_cfg['SHOW_PROCS'] === 'yes'
+    ? '<tr class="header"><td><span class="w44">_(Process)_</span><span class="w18">_(CPU)_</span><span class="w18">_(Memory)_</span></td></tr><tr><td><div id="btop-procs"></div></td></tr>'
+    : '';
+
+$mytiles['btop']['column1'] = <<<EOT
 <tbody id="tblBtopDash" title="_(btop system monitor)_">
 <tr>
   <td>
@@ -14,12 +29,14 @@ $mytiles['btop']['column1'] = <<<'EOT'
       <span class="tile-header-left">
         <img src="/plugins/btop/images/btop.png" style="width:32px;height:32px">
         <div class="section">_(btop)_<br>
-          <span id="btop-load">_(Loading)_&hellip;</span>
-          <span id="btop-temp"></span>
+          $btop_header
         </div>
       </span>
       <span class="tile-header-right">
         <span class="tile-header-right-controls">
+          <a href="/Settings/SettingsBtop" title="_(btop tile settings)_">
+            <i class="fa fa-fw fa-cog control"></i>
+          </a>
           <a href="#" id="btop-fullscreen" title="_(Open btop fullscreen)_">
             <i class="fa fa-fw fa-expand control"></i>
           </a>
@@ -28,14 +45,8 @@ $mytiles['btop']['column1'] = <<<'EOT'
     </span>
   </td>
 </tr>
-<tr class="header">
-  <td>
-    <span class="w44">_(Process)_</span>
-    <span class="w18">_(CPU)_</span>
-    <span class="w18">_(Memory)_</span>
-  </td>
-</tr>
-<tr><td><div id="btop-procs"></div></td></tr>
+$btop_rates
+$btop_procs
 </tbody>
 EOT;
 ?>
