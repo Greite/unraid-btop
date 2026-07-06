@@ -95,8 +95,8 @@ Entrée : `tag` ∈ {`btop`, `btop-full`} (liste blanche stricte — toute autre
 1. si un ttyd vivant écoute déjà sur `/var/tmp/<tag>.sock` → répond `busy` (la tuile affiche « session déjà ouverte, reconnecter ») ;
 2. si le socket existe sans processus (orphelin) → le supprime ;
 3. vérifie que `/usr/bin/btop` existe, sinon répond une erreur explicite (affichée dans la tuile) ;
-4. lance : `ttyd -s 9 -o -m 1 -i /var/tmp/<tag>.sock <cmd>` où
-   - `tag=btop` (tuile) : `env XDG_CONFIG_HOME=/var/local/btop-tile btop` — config dédiée compacte : `shown_boxes="cpu mem net"`, refresh 2000 ms, thème sombre assorti au GUI Unraid, seedée par le `.plg` ;
+4. lance : `ttyd -s 9 -o -m 1 -i /var/tmp/<tag>.sock <cmd>` (mêmes options que l'invocation native d'Unraid dans `OpenTerminal.php` ; utiliser le wrapper `ttyd-exec` s'il est présent sur le système, comme le fait l'OS) où
+   - `tag=btop` (tuile) : `env XDG_CONFIG_HOME=/var/local/btop-tile btop` — config dédiée compacte seedée par le `.plg` : `shown_boxes="cpu mem net"`, `update_ms=2000`, `color_theme="Default"`, `theme_background=False` (fond transparent pour se fondre dans la tuile) ;
    - `tag=btop-full` (plein écran) : `btop` avec la config CLI normale (`/root/.config/btop`) ;
 5. `-o` (once) + `-m 1` : la session s'arrête seule à la déconnexion du client — aucun processus résiduel, et une seule session par tag à la fois.
 
@@ -111,7 +111,7 @@ Entrée : `tag` ∈ {`btop`, `btop-full`} (liste blanche stricte — toute autre
 
 ## 4. Publication Community Apps
 
-- Template `btop/btop.xml` ajouté au repo `Greite/unraid-templates` : `<Plugin>true</Plugin>`, `<PluginURL>` → `https://raw.githubusercontent.com/Greite/unraid-btop/main/btop.plg`, `<Icon>`, `<Overview>`, catégorie `Tools:System Plugins:`, `<Support>` → GitHub Issues du repo `unraid-btop` ;
+- Template `btop/btop.xml` ajouté au repo `Greite/unraid-templates` : `<Plugin>true</Plugin>`, `<PluginURL>` → `https://raw.githubusercontent.com/Greite/unraid-btop/main/btop.plg`, `<Icon>`, `<Overview>`, catégorie `Tools:System` (CA le classe côté plugins via `<Plugin>true</Plugin>`), `<Support>` → GitHub Issues du repo `unraid-btop` ;
 - ajout de la ligne correspondante dans le README de `unraid-templates` ;
 - point d'attention : les modérateurs CA peuvent exiger un thread de support sur le forum Unraid pour les plugins — à créer au moment de la soumission si demandé.
 
