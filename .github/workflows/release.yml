@@ -1,0 +1,83 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      btop_version:
+        description: "btop version (e.g. 1.4.7) — empty = latest upstream"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency: release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve target btop version
+        id: btop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ inputs.btop_version }}"
+          if [ -z "$V" ]; then
+            V="$(gh api repos/aristocratos/btop/releases/latest --jq .tag_name)"
+            V="${V#v}"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Compute plugin version (UTC date + suffix on collision)
+        id: plg
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BASE="$(date -u +%Y.%m.%d)"
+          VER="$BASE"
+          for s in a b c d e f; do
+            gh release view "$VER" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || break
+            VER="$BASE$s"
+          done
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Run tests
+        run: |
+          php tests/php/run_tests.php
+          bash scripts/test_php_syntax.sh
+
+      - name: Build package
+        run: bash scripts/build.sh "${{ steps.btop.outputs.version }}" "${{ steps.plg.outputs.version }}"
+
+      - name: Smoke test the binary
+        run: |
+          OUT="$(dist/pkgroot/usr/bin/btop --version)"
+          echo "$OUT"
+          echo "$OUT" | grep -F "${{ steps.btop.outputs.version }}"
+
+      - name: Create GitHub release (artifacts first, plg bump after)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.plg.outputs.version }}" \
+            dist/unraid.btop-*.txz dist/unraid.btop-*.md5 \
+            -t "${{ steps.plg.outputs.version }} (btop v${{ steps.btop.outputs.version }})" \
+            -n "Packages btop v${{ steps.btop.outputs.version }}.
+          Upstream artifact SHA256: $(cat dist/btop-*.sha256)"
+
+      - name: Bump btop.plg and BTOP_VERSION
+        run: |
+          PLGVER="${{ steps.plg.outputs.version }}"
+          BTOPVER="${{ steps.btop.outputs.version }}"
+          MD5="$(awk '{print $1}' dist/unraid.btop-*.md5)"
+          sed -i -E "s|(<!ENTITY version +\").*(\">)|\1${PLGVER}\2|" btop.plg
+          sed -i -E "s|(<!ENTITY md5 +\").*(\">)|\1${MD5}\2|" btop.plg
+          awk -v entry="###${PLGVER}\n- Update btop to v${BTOPVER}" \
+            '{print} /^<CHANGES>$/{print entry}' btop.plg > btop.plg.new
+          mv btop.plg.new btop.plg
+          xmllint --noout --noent btop.plg
+          echo "$BTOPVER" > BTOP_VERSION
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add btop.plg BTOP_VERSION
+          git commit -m "release: ${PLGVER} (btop v${BTOPVER}) [skip ci]"
+          git push
