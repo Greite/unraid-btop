@@ -98,7 +98,7 @@ Section en erreur (capteur absent, fichier illisible) → clé à `null` ou abse
 | --- | --- |
 | Pas de `btop.cfg` (install neuve, upgrade depuis v1) | Défauts = tuile v1 à l'identique |
 | Valeur cfg invalide (édition manuelle) | Clamp/défaut silencieux côté PHP |
-| Aucun disque/interface physique détecté | Clé `null` → section masquée par le JS |
+| Aucun disque/interface physique détecté | Clé `null` → le JS affiche « n/a » pour cette section (une section activée ne disparaît pas silencieusement) |
 | Toutes sections désactivées | La tuile n'affiche que l'en-tête (icône + boutons) — état légal |
 | Désinstallation | `btop.cfg` conservé sur la flash (même politique que `config/`) |
 
