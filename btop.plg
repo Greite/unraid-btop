@@ -3,7 +3,7 @@
   <!ENTITY name      "btop">
   <!ENTITY author    "Greite">
   <!ENTITY version   "2026.07.06">
-  <!ENTITY md5       "00000000000000000000000000000000">
+  <!ENTITY md5       "3b0af38f756f8b717023ba10eeb2ddf9">
   <!ENTITY package   "unraid.btop-&version;-x86_64-1">
   <!ENTITY gitURL    "https://github.com/Greite/unraid-btop/releases/download">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/Greite/unraid-btop/main/btop.plg">
@@ -14,6 +14,8 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" icon="btop.png" min="6.12.0">
 
 <CHANGES>
+###2026.07.06
+- Update btop to v1.4.7
 ###2026.07.06
 - Initial release: btop CLI + native dashboard tile (top processes, load, CPU temperature)
 </CHANGES>
