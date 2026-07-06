@@ -1,7 +1,7 @@
 **btop**
 
 btop is created by aristocratos (https://github.com/aristocratos/btop) — this
-plugin is only an Unraid integration of it, by GreiteTurtle.
+plugin is only an Unraid integration of it.
 
 Installs the btop resource monitor CLI and adds a dashboard tile showing
 load average, CPU temperature and the top 5 processes by CPU usage.
