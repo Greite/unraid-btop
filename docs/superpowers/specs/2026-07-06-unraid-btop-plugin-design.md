@@ -24,11 +24,12 @@ Version minimale d'Unraid : **6.12.0** (nouveau dashboard à tuiles + infra `log
 | Contenu de la tuile | Ce qu'Unraid n'affiche pas déjà : top processus (CPU/RAM), load average, température CPU | Dupliquer les jauges CPU/RAM/réseau déjà natives du dashboard |
 | Backend plein écran | Infra ttyd/nginx native d'Unraid (`/logterminal/<tag>/` → `unix:/var/tmp/<tag>.sock`, auth Unraid incluse) | ttyd dédié sur un port TCP (pas d'auth, mixed-content HTTPS) |
 | Distribution | Community Apps, template dans `Greite/unraid-templates` | Repo perso seul ; install locale manuelle |
-| Source du binaire | Release officielle btop `btop-x86_64-linux-musl` (Apache-2.0), repackagée dans notre `.txz` | Compilation maison ; dépendance au `.tbz` upstream à l'install |
+| Source du binaire | Release officielle btop `btop-<arch>-linux-musl` (Apache-2.0), repackagée dans notre `.txz` | Compilation maison ; dépendance au `.tbz` upstream à l'install |
 | Nom du paquet Slackware | `unraid.btop` (préfixé, comme `intel.gpu.top` d'ich777) | `btop` nu (conflit avec le paquet NerdTools) |
 | Versioning | Date (`YYYY.MM.DD`), convention plugins Unraid | SemVer |
 | Hébergement des paquets | GitHub Releases (+ MD5 dans le `.plg`) | `.txz` committés dans le repo |
 | CI | GitHub Actions : release automatisée + suivi automatique des versions btop upstream (full-auto, gardé par un smoke test) | Build manuel ; PR d'approbation avant chaque release |
+| Architectures | Pipeline arch-ready (build/`.plg`/CI paramétrés par arch, sélection `uname -m`), **seul x86_64 activé** : Unraid n'existe qu'en x86_64 en 2026. Activer une arch future = 1 entrée de matrice CI | Multi-arch réellement construit dès maintenant (artefacts inutilisables, gaspillage CI) ; x86_64 codé en dur partout |
 
 ## 3. Architecture
 
@@ -58,20 +59,23 @@ unraid-btop/
 └── README.md
 ```
 
-Les binaires ne sont pas committés : `build.sh` télécharge la release officielle btop (checksum vérifié), l'injecte dans `source/btop/usr/`, construit `unraid.btop-<version>.txz` (tar propriétaire root, compression xz) et son `.md5`. Les artefacts sont publiés en GitHub Releases taguées `<version>`.
+Les binaires ne sont pas committés : `build.sh <version-btop> <arch>` télécharge l'asset officiel btop `btop-<arch>-linux-musl.tbz` (checksum vérifié), l'injecte dans `source/btop/usr/`, construit `unraid.btop-<version>-<arch>-1.txz` (nommage Slackware standard, tar propriétaire root, compression xz) et son `.md5`. Les artefacts sont publiés en GitHub Releases taguées `<version>`.
+
+Seul le binaire btop est arch-spécifique : la tuile (PHP/JS) et ttyd (fourni par l'OS) sont identiques sur toutes les architectures. La liste des architectures actives vit à un seul endroit (la matrice de `release.yml`) ; **x86_64 est la seule active** tant qu'Unraid n'existe pas sur d'autres plateformes.
 
 ### 3.2 Le fichier `btop.plg`
 
-Entités XML : `name=btop`, `author=Greite`, `version=YYYY.MM.DD`, `gitURL` (releases), `md5`, `min=6.12.0`, section `<CHANGES>`.
+Entités XML : `name=btop`, `author=Greite`, `version=YYYY.MM.DD`, `gitURL` (releases), `min=6.12.0`, section `<CHANGES>`, et un MD5 **par architecture** (`md5_x86_64`, plus tard `md5_aarch64`…) — épinglés dans le `.plg` versionné, écrits par la CI au bump.
 
-- **Install / update / boot** (rejoué à chaque boot par le système de plugins Unraid) :
-  1. supprime les vieux `.txz` d'autres versions dans `/boot/config/plugins/btop/` ;
-  2. télécharge `unraid.btop-<version>.txz` (MD5 vérifié) → `/boot/config/plugins/btop/` ;
-  3. `upgradepkg --install-new` ;
-  4. crée `/boot/config/plugins/btop/config/` si absent et pose le symlink `/root/.config/btop` → ce dossier (config CLI persistante entre reboots).
+- **Install / update / boot** (rejoué à chaque boot par le système de plugins Unraid) — le téléchargement est fait par un bloc bash arch-aware (pattern des plugins multi-variantes d'ich777), pas par un `<FILE><URL>` statique :
+  1. résout `ARCH=$(uname -m)` ; si aucune entité MD5 n'existe pour cette arch → échec propre avec message explicite (« architecture non supportée ») ;
+  2. supprime les vieux `.txz` d'autres versions dans `/boot/config/plugins/btop/` ;
+  3. télécharge `unraid.btop-<version>-<arch>-1.txz`, vérifie son MD5 contre l'entité correspondante → `/boot/config/plugins/btop/` ;
+  4. `upgradepkg --install-new` ;
+  5. crée `/boot/config/plugins/btop/config/` si absent et pose le symlink `/root/.config/btop` → ce dossier (config CLI persistante entre reboots).
 - **Remove** :
   1. tue la session ttyd du plugin (`pkill -f '/var/tmp/btop\.sock'`) ;
-  2. `removepkg unraid.btop-<version>` ;
+  2. `removepkg unraid.btop-<version>-<arch>-1` ;
   3. supprime `/usr/local/emhttp/plugins/btop` et le symlink `/root/.config/btop` ;
   4. **conserve** `/boot/config/plugins/btop/config/` (réglages utilisateur) mais supprime les `.txz`.
 
@@ -148,11 +152,11 @@ Objectif : quand btop publie une nouvelle version upstream, le plugin se rebuild
 Déclencheurs : `workflow_dispatch` (input : version btop, défaut = latest) et appel par `check-btop-update.yml`. Étapes :
 
 1. résout la version btop cible via l'API GitHub (`aristocratos/btop`) ;
-2. télécharge l'asset officiel `btop-x86_64-linux-musl.tbz` de cette release ; vérifie le checksum publié par upstream s'il existe, sinon calcule et consigne le SHA256 dans les notes de release (traçabilité) ;
-3. **smoke test** : exécute `./btop --version` sur le runner (binaire statique → tourne sur ubuntu-latest) et vérifie que la version rapportée correspond à la cible ; tout échec stoppe le workflow avant toute publication ;
-4. `build.sh` : construit `unraid.btop-<version-plugin>.txz` + `.md5` (version plugin = date UTC `YYYY.MM.DD`, suffixe `a`, `b`… si une release existe déjà ce jour-là) ;
-5. crée la GitHub Release taguée avec les artefacts ;
-6. met à jour sur `main` : entités `version`/`md5` du `btop.plg`, entrée `<CHANGES>` (« Update btop to vX.Y.Z »), fichier `BTOP_VERSION` — commit via `GITHUB_TOKEN` (permission `contents: write`).
+2. **pour chaque arch de la matrice** (aujourd'hui : `x86_64` seul) : télécharge l'asset officiel `btop-<arch>-linux-musl.tbz` de cette release ; vérifie le checksum publié par upstream s'il existe, sinon calcule et consigne le SHA256 dans les notes de release (traçabilité) ;
+3. **smoke test** : exécute `./btop --version` (binaire statique ; natif sur ubuntu-latest pour x86_64, via qemu-user/binfmt pour les archs étrangères) et vérifie que la version rapportée correspond à la cible ; tout échec stoppe le workflow avant toute publication ;
+4. `build.sh` : construit `unraid.btop-<version-plugin>-<arch>-1.txz` + `.md5` par arch (version plugin = date UTC `YYYY.MM.DD`, suffixe `a`, `b`… si une release existe déjà ce jour-là) ;
+5. crée la GitHub Release taguée avec les artefacts de toutes les archs ;
+6. met à jour sur `main` : entités `version`/`md5_<arch>` du `btop.plg`, entrée `<CHANGES>` (« Update btop to vX.Y.Z »), fichier `BTOP_VERSION` — commit via `GITHUB_TOKEN` (permission `contents: write`).
 
 L'ordre 5→6 garantit qu'un `.plg` pointant sur la nouvelle version n'est jamais publié avant que les artefacts existent.
 
@@ -201,4 +205,4 @@ Sur PR et push de branche : exécute `build.sh` + smoke test, sans release ni co
 - Mode iframe « btop live » dans la tuile (écarté au profit de la tuile native ; possible en v2 commutable) ;
 - page de settings (nombre de processus affichés, intervalle de refresh) — valeurs fixes en v1 (5 processus, 3 s) ;
 - support GPU dans btop ;
-- architectures non x86_64.
+- **activation** d'architectures non x86_64 : le pipeline entier (build, `.plg`, CI) est arch-ready dès la v1, mais aucune autre arch n'est construite tant qu'Unraid reste x86_64-only (état 2026). Le jour venu : ajouter l'arch à la matrice de `release.yml`, rien d'autre.
