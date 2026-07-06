@@ -1,14 +1,14 @@
 # Spec — Plugin Unraid « btop »
 
 Date : 2026-07-06
-Statut : validé (design approuvé en session de brainstorming)
+Statut : validé (design approuvé en session de brainstorming, révisé : tuile native stats au lieu de l'iframe)
 
 ## 1. Objectif
 
 Un plugin Unraid qui :
 
 1. installe le CLI **btop** sur le serveur (utilisable en SSH et dans le web terminal Unraid) ;
-2. ajoute une **tuile au dashboard** Unraid affichant le vrai btop en temps réel, interactif, dans une iframe ;
+2. ajoute une **tuile au dashboard** Unraid affichant en HTML natif les infos que le dashboard ne montre pas déjà (top processus, load average, température CPU), avec un bouton pour ouvrir le **vrai btop plein écran** dans le navigateur ;
 3. est publié sur **Community Apps** via le repo de templates existant `Greite/unraid-templates`.
 
 Le code du plugin vit dans le repo `Greite/unraid-btop` (ce dossier). Modèle de packaging : `ich777/intel-gpu-top`. Modèle de tuile dashboard : le fichier `.page` d'exemple de `SimonFair/gpustat-unraid` (format officiel des tuiles 6.12+).
@@ -19,8 +19,10 @@ Version minimale d'Unraid : **6.12.0** (nouveau dashboard à tuiles + infra `log
 
 | Décision | Choix | Alternatives écartées |
 | --- | --- | --- |
-| Forme du panneau dashboard | Tuile avec btop live embarqué (iframe) + bouton plein écran | Tuile-bouton seule ; tuile HTML native imitant btop |
-| Backend d'affichage | Infra ttyd/nginx native d'Unraid (`/logterminal/<tag>/` → `unix:/var/tmp/<tag>.sock`, auth Unraid incluse) | ttyd dédié sur un port TCP (pas d'auth, mixed-content HTTPS) |
+| Forme du panneau dashboard | Tuile native HTML (stats lues depuis /proc et les capteurs) + bouton plein écran vers le vrai btop | Iframe btop live via ttyd (un seul viewer, session à gérer) ; tuile-bouton seule |
+| Pourquoi pas « extraire » btop | btop est une TUI sans mode batch/export (ni JSON ni texte) : impossible de scraper sa sortie proprement | — |
+| Contenu de la tuile | Ce qu'Unraid n'affiche pas déjà : top processus (CPU/RAM), load average, température CPU | Dupliquer les jauges CPU/RAM/réseau déjà natives du dashboard |
+| Backend plein écran | Infra ttyd/nginx native d'Unraid (`/logterminal/<tag>/` → `unix:/var/tmp/<tag>.sock`, auth Unraid incluse) | ttyd dédié sur un port TCP (pas d'auth, mixed-content HTTPS) |
 | Distribution | Community Apps, template dans `Greite/unraid-templates` | Repo perso seul ; install locale manuelle |
 | Source du binaire | Release officielle btop `btop-x86_64-linux-musl` (Apache-2.0), repackagée dans notre `.txz` | Compilation maison ; dépendance au `.tbz` upstream à l'install |
 | Nom du paquet Slackware | `unraid.btop` (préfixé, comme `intel.gpu.top` d'ich777) | `btop` nu (conflit avec le paquet NerdTools) |
@@ -38,9 +40,11 @@ unraid-btop/
 │   ├── bin/                        # btop (injecté au build, non committé)
 │   ├── share/btop/themes/          # thèmes officiels (injectés au build)
 │   └── local/emhttp/plugins/btop/
-│       ├── btop-dashboard.page     # tuile dashboard
+│       ├── btop-dashboard.page     # tuile dashboard native
 │       ├── include/
-│       │   └── start_session.php   # endpoint : démarre/nettoie les sessions ttyd
+│       │   ├── stats.php           # endpoint JSON : load, temp, top processus
+│       │   └── start_session.php   # endpoint : démarre la session ttyd plein écran
+│       ├── scripts/btop-tile.js    # polling + rendu de la tuile
 │       ├── images/btop.png         # icône du plugin
 │       └── README.md               # affiché dans la page Plugins d'Unraid
 ├── scripts/build.sh                # build reproductible du .txz + .md5
@@ -58,10 +62,9 @@ Entités XML : `name=btop`, `author=Greite`, `version=YYYY.MM.DD`, `gitURL` (rel
   1. supprime les vieux `.txz` d'autres versions dans `/boot/config/plugins/btop/` ;
   2. télécharge `unraid.btop-<version>.txz` (MD5 vérifié) → `/boot/config/plugins/btop/` ;
   3. `upgradepkg --install-new` ;
-  4. crée `/boot/config/plugins/btop/config/` si absent et pose le symlink `/root/.config/btop` → ce dossier (config CLI persistante entre reboots) ;
-  5. seed la config de la session tuile (voir 3.4).
+  4. crée `/boot/config/plugins/btop/config/` si absent et pose le symlink `/root/.config/btop` → ce dossier (config CLI persistante entre reboots).
 - **Remove** :
-  1. tue les sessions ttyd du plugin (`pkill -f '/var/tmp/btop(-full)?\.sock'`) ;
+  1. tue la session ttyd du plugin (`pkill -f '/var/tmp/btop\.sock'`) ;
   2. `removepkg unraid.btop-<version>` ;
   3. supprime `/usr/local/emhttp/plugins/btop` et le symlink `/root/.config/btop` ;
   4. **conserve** `/boot/config/plugins/btop/config/` (réglages utilisateur) mais supprime les `.txz`.
@@ -76,33 +79,48 @@ Icon="btop.png"
 Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0','>=')"
 ```
 
-Corps : enregistre une tuile via `$mytiles['btop']['column1']` — un `<tbody>` avec le markup standard (`title="_(btop)_"`, `tile-header`, icône, contrôles à droite). Contenu de la tuile :
+Corps : enregistre une tuile via `$mytiles['btop']['column1']` — un `<tbody>` avec le markup standard des tuiles (`title="_(btop)_"`, `tile-header`, icône, contrôles à droite, spans `w18/w26/w36/w44` pour l'alignement). Contenu **100 % HTML natif** :
 
-- une `<iframe>` (hauteur ~400 px, largeur 100 %) dont le `src` est posé **après** l'appel réussi à l'endpoint ;
-- un état « déconnecté » : message + bouton « Démarrer btop » qui rappelle l'endpoint et recharge l'iframe ;
-- dans `tile-header-right` : un bouton plein écran (`fa-expand`) qui appelle l'endpoint avec `tag=btop-full` puis `window.open('/logterminal/btop-full/')`.
+- une ligne d'en-tête de données : **load average** (1/5/15 min) et **température CPU** ;
+- un tableau **top 5 processus** : nom, CPU %, mémoire (RSS lisible), trié par CPU ;
+- dans `tile-header-right` : un bouton plein écran (`fa-expand`) qui appelle `start_session.php` puis `window.open('/logterminal/btop/')` — c'est là que vit le vrai btop.
 
-Flux au chargement du dashboard :
+`scripts/btop-tile.js` : au chargement du dashboard, requête `stats.php` puis rafraîchissement toutes les 3 s (uniquement quand l'onglet est visible — `document.visibilityState` — pour ne pas échantillonner pour rien). Rendu par simple remplacement du contenu du tableau. Plusieurs onglets/viewers simultanés : aucun problème, l'endpoint est sans état.
 
-1. le JS de la tuile fait un POST vers `/plugins/btop/include/start_session.php` avec `tag=btop` ;
-2. l'endpoint répond OK → le JS pose `iframe.src = '/logterminal/btop/'` ;
-3. nginx proxifie vers `unix:/var/tmp/btop.sock` (WebSocket, auth de session Unraid, pas de mixed-content).
+### 3.4 L'endpoint `stats.php`
 
-### 3.4 L'endpoint `start_session.php`
+Répond un JSON :
 
-Entrée : `tag` ∈ {`btop`, `btop-full`} (liste blanche stricte — toute autre valeur = HTTP 400). Comportement :
+```json
+{
+  "load": [0.42, 0.38, 0.35],
+  "cpu_temp": 52,
+  "procs": [
+    {"name": "qemu-system", "cpu": 42.1, "mem": 8815321088},
+    ...
+  ]
+}
+```
 
-1. si un ttyd vivant écoute déjà sur `/var/tmp/<tag>.sock` → répond `busy` (la tuile affiche « session déjà ouverte, reconnecter ») ;
+Sources :
+
+- `load` : `/proc/loadavg` ;
+- `cpu_temp` : capteurs hwmon (`/sys/class/hwmon`), en réutilisant si possible la sélection de capteur déjà faite par dynamix (config « system temp ») ; `null` si aucun capteur — la tuile masque alors le champ ;
+- `procs` : top 5 par **CPU instantané** — deux échantillons de `/proc/<pid>/stat` espacés d'un court intervalle (~500 ms), delta de temps CPU rapporté au temps écoulé (même principe que top/btop). `mem` = RSS. Détails d'implémentation (agrégation par processus, exclusion des kernel threads) fixés au plan.
+
+Aucun paramètre d'entrée → pas de surface d'injection. Réservé aux sessions authentifiées (servi par emhttp comme toute page de plugin).
+
+### 3.5 L'endpoint `start_session.php` (plein écran)
+
+Entrée : `tag=btop` uniquement (liste blanche stricte — toute autre valeur = HTTP 400). Comportement :
+
+1. si un ttyd vivant écoute déjà sur `/var/tmp/btop.sock` → répond `busy` (le bouton affiche « session déjà ouverte ») ;
 2. si le socket existe sans processus (orphelin) → le supprime ;
-3. vérifie que `/usr/bin/btop` existe, sinon répond une erreur explicite (affichée dans la tuile) ;
-4. lance : `ttyd -s 9 -o -m 1 -i /var/tmp/<tag>.sock <cmd>` (mêmes options que l'invocation native d'Unraid dans `OpenTerminal.php` ; utiliser le wrapper `ttyd-exec` s'il est présent sur le système, comme le fait l'OS) où
-   - `tag=btop` (tuile) : `env XDG_CONFIG_HOME=/var/local/btop-tile btop` — config dédiée compacte seedée par le `.plg` : `shown_boxes="cpu mem net"`, `update_ms=2000`, `color_theme="Default"`, `theme_background=False` (fond transparent pour se fondre dans la tuile) ;
-   - `tag=btop-full` (plein écran) : `btop` avec la config CLI normale (`/root/.config/btop`) ;
-5. `-o` (once) + `-m 1` : la session s'arrête seule à la déconnexion du client — aucun processus résiduel, et une seule session par tag à la fois.
+3. vérifie que `/usr/bin/btop` existe, sinon répond une erreur explicite ;
+4. lance : `ttyd -s 9 -o -m 1 -i /var/tmp/btop.sock btop` (mêmes options que l'invocation native d'Unraid dans `OpenTerminal.php` ; utiliser le wrapper `ttyd-exec` s'il est présent sur le système, comme le fait l'OS). btop utilise la config CLI normale (`/root/.config/btop`) ;
+5. `-o` (once) + `-m 1` : la session s'arrête seule à la fermeture de la fenêtre — aucun processus résiduel. Un seul plein écran à la fois (limitation assumée, sans impact sur la tuile).
 
-**Limitation assumée (v1)** : un seul viewer par tag. Un second onglet dashboard affiche l'état « reconnecter » au lieu du btop live.
-
-### 3.5 Le CLI
+### 3.6 Le CLI
 
 - `/usr/bin/btop` + `/usr/share/btop/themes/` installés par le paquet ;
 - config persistante via le symlink vers la flash (3.2) ;
@@ -119,20 +137,23 @@ Entrée : `tag` ∈ {`btop`, `btop-full`} (liste blanche stricte — toute autre
 
 | Situation | Comportement |
 | --- | --- |
-| Binaire btop absent (install corrompue) | L'endpoint répond une erreur ; la tuile affiche le message + lien vers la page Plugins |
-| Socket orphelin (crash ttyd) | Nettoyé par l'endpoint avant relance |
-| Session déjà occupée (`-m 1`) | Tuile en état « reconnecter », pas d'iframe cassée |
+| `stats.php` en erreur / réponse invalide | La tuile affiche « données indisponibles » et réessaie au tick suivant (pas de tuile cassée) |
+| Aucun capteur de température | Champ temp masqué, le reste de la tuile fonctionne |
+| Binaire btop absent (install corrompue) | `start_session.php` répond une erreur ; message clair côté bouton plein écran |
+| Socket orphelin (crash ttyd) | Nettoyé par `start_session.php` avant relance |
+| Session plein écran déjà occupée (`-m 1`) | Message « session déjà ouverte », pas de fenêtre cassée |
 | `tag` non whitelisté | HTTP 400, rien n'est exécuté |
 | Téléchargement `.txz` échoué / MD5 invalide | Le système de plugins Unraid annule l'installation (comportement natif du `.plg`) |
-| Désinstallation | Sessions tuées, paquet retiré, config utilisateur conservée sur la flash |
+| Désinstallation | Session tuée, paquet retiré, config utilisateur conservée sur la flash |
 
 ## 6. Tests & validation
 
 1. **Build** : `scripts/build.sh` reproductible — vérifie le checksum du binaire upstream, produit `.txz` + `.md5` ; contrôle `tar -tf` du contenu attendu.
 2. **Test sur serveur réel** (le serveur Unraid de l'utilisateur) :
    - install via URL du `.plg` (branche de test) ;
-   - tuile visible sur le dashboard, btop live, interactif ;
-   - bouton plein écran fonctionnel (session séparée) ;
+   - tuile visible sur le dashboard : load, temp, top 5 processus cohérents avec `htop`/`btop`, refresh ~3 s ;
+   - deux onglets dashboard ouverts simultanément → les deux tuiles vivent ;
+   - bouton plein écran → vrai btop interactif dans une fenêtre, session fermée à la fermeture de la fenêtre ;
    - `btop` fonctionne en SSH et via le web terminal ;
    - reboot → plugin réinstallé automatiquement, config CLI conservée ;
    - désinstallation → plus de tuile, plus de binaire, plus de processus ttyd résiduels.
@@ -140,7 +161,7 @@ Entrée : `tag` ∈ {`btop`, `btop-full`} (liste blanche stricte — toute autre
 
 ## 7. Hors scope (v1)
 
-- Page de settings (choix du thème/preset de la tuile depuis le GUI) ;
-- multi-viewers simultanés sur la tuile ;
+- Mode iframe « btop live » dans la tuile (écarté au profit de la tuile native ; possible en v2 commutable) ;
+- page de settings (nombre de processus affichés, intervalle de refresh) — valeurs fixes en v1 (5 processus, 3 s) ;
 - support GPU dans btop ;
 - architectures non x86_64.
