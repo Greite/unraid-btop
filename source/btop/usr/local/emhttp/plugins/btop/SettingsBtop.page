@@ -1,0 +1,47 @@
+Menu="Utilities"
+Title="btop"
+Icon="btop.png"
+---
+<?php
+/* btop tile settings. Values are written to /boot/config/plugins/btop/btop.cfg
+   by Unraid's native /update.php endpoint (session-authenticated). */
+require_once '/usr/local/emhttp/plugins/btop/include/stats_lib.php';
+$btop_cfg = btop_validate_cfg(parse_plugin_cfg('btop', true));
+
+function btop_sel($current, $value): string {
+    return $current === $value ? ' selected' : '';
+}
+?>
+<form markdown="1" method="POST" action="/update.php" target="progressFrame">
+<input type="hidden" name="#file" value="btop/btop.cfg">
+
+_(Show load average)_:
+: <select name="SHOW_LOAD"><option value="yes"<?=btop_sel($btop_cfg['SHOW_LOAD'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_LOAD'], 'no')?>>_(No)_</option></select>
+
+_(Show CPU temperature)_:
+: <select name="SHOW_TEMP"><option value="yes"<?=btop_sel($btop_cfg['SHOW_TEMP'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_TEMP'], 'no')?>>_(No)_</option></select>
+
+_(Show uptime and process count)_:
+: <select name="SHOW_UPTIME"><option value="yes"<?=btop_sel($btop_cfg['SHOW_UPTIME'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_UPTIME'], 'no')?>>_(No)_</option></select>
+
+_(Show aggregated disk I/O rates)_:
+: <select name="SHOW_DISKIO"><option value="yes"<?=btop_sel($btop_cfg['SHOW_DISKIO'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_DISKIO'], 'no')?>>_(No)_</option></select>
+
+_(Show aggregated network rates)_:
+: <select name="SHOW_NET"><option value="yes"<?=btop_sel($btop_cfg['SHOW_NET'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_NET'], 'no')?>>_(No)_</option></select>
+
+_(Show process table)_:
+: <select name="SHOW_PROCS"><option value="yes"<?=btop_sel($btop_cfg['SHOW_PROCS'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_PROCS'], 'no')?>>_(No)_</option></select>
+
+_(Sort processes by)_:
+: <select name="PROC_SORT"><option value="cpu"<?=btop_sel($btop_cfg['PROC_SORT'], 'cpu')?>>_(CPU)_</option><option value="mem"<?=btop_sel($btop_cfg['PROC_SORT'], 'mem')?>>_(Memory)_</option></select>
+
+_(Number of processes shown)_:
+: <select name="PROC_COUNT"><?php for ($i = 3; $i <= 10; $i++) echo '<option value="' . $i . '"' . btop_sel($btop_cfg['PROC_COUNT'], $i) . '>' . $i . '</option>'; ?></select>
+
+_(Tile refresh interval)_:
+: <select name="REFRESH_MS"><?php foreach ([2000 => '2 s', 3000 => '3 s', 5000 => '5 s', 10000 => '10 s'] as $ms => $label) echo '<option value="' . $ms . '"' . btop_sel($btop_cfg['REFRESH_MS'], $ms) . '>' . $label . '</option>'; ?></select>
+
+&nbsp;
+: <input type="submit" name="#apply" value="_(Apply)_"><input type="button" value="_(Done)_" onclick="done()">
+</form>
