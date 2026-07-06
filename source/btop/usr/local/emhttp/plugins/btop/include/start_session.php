@@ -10,6 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Serialize concurrent start attempts (double-clicks): only one request
+// may run the check-then-spawn sequence at a time.
+$lock = fopen('/var/tmp/btop-session.lock', 'c');
+if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
+    echo json_encode(['ok' => false, 'status' => 'busy']);
+    exit;
+}
+
 $sock = '/var/tmp/btop.sock';
 $btop = '/usr/bin/btop';
 
@@ -40,5 +48,7 @@ exec(sprintf('nohup %s -s 9 -o -m 1 -i %s %s >/dev/null 2>&1 &',
 
 // Wait up to 2 s for the socket to appear
 for ($i = 0; $i < 20 && !file_exists($sock); $i++) usleep(100000);
+
+flock($lock, LOCK_UN);
 
 echo json_encode(['ok' => file_exists($sock)]);
