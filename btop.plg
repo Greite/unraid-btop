@@ -1,0 +1,63 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "btop">
+  <!ENTITY author    "Greite">
+  <!ENTITY version   "2026.07.06">
+  <!ENTITY md5       "00000000000000000000000000000000">
+  <!ENTITY package   "unraid.btop-&version;-x86_64-1">
+  <!ENTITY gitURL    "https://github.com/Greite/unraid-btop/releases/download">
+  <!ENTITY pluginURL "https://raw.githubusercontent.com/Greite/unraid-btop/main/btop.plg">
+  <!ENTITY plugin    "/boot/config/plugins/&name;">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" icon="btop.png" min="6.12.0">
+
+<CHANGES>
+###2026.07.06
+- Initial release: btop CLI + native dashboard tile (top processes, load, CPU temperature)
+</CHANGES>
+
+<!-- Remove packages from other versions -->
+<FILE Run="/bin/bash">
+<INLINE>
+rm -f $(ls &plugin;/unraid.btop-*.txz 2>/dev/null | grep -v '&version;')
+</INLINE>
+</FILE>
+
+<!-- Download and install the package (MD5 checked by the plugin system) -->
+<FILE Name="&plugin;/&package;.txz" Run="upgradepkg --install-new">
+<URL>&gitURL;/&version;/&package;.txz</URL>
+<MD5>&md5;</MD5>
+</FILE>
+
+<!-- Persist btop CLI config on the flash drive -->
+<FILE Run="/bin/bash">
+<INLINE>
+mkdir -p &plugin;/config
+if [ ! -L /root/.config/btop ]; then
+  mkdir -p /root/.config
+  rm -rf /root/.config/btop
+  ln -sf &plugin;/config /root/.config/btop
+fi
+echo ""
+echo "----------------------------------------------------"
+echo " btop installed — dashboard tile + 'btop' in the CLI"
+echo "----------------------------------------------------"
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+# Kill the fullscreen ttyd session if any
+pkill -f '/var/tmp/btop\.sock' 2>/dev/null
+sleep 1
+removepkg &package;
+rm -rf &emhttp;
+rm -f /root/.config/btop
+rm -f &plugin;/*.txz
+# &plugin;/config is kept on purpose (user's btop settings survive reinstalls)
+echo "btop uninstalled"
+</INLINE>
+</FILE>
+</PLUGIN>

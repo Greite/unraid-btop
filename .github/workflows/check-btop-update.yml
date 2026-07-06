@@ -1,0 +1,26 @@
+name: Check btop update
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare packaged version with upstream latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT="$(cat BTOP_VERSION)"
+          LATEST="$(gh api repos/aristocratos/btop/releases/latest --jq .tag_name)"
+          LATEST="${LATEST#v}"
+          if [ "$CURRENT" != "$LATEST" ]; then
+            echo "New btop release: $LATEST (packaged: $CURRENT) — triggering release"
+            gh workflow run release.yml -R "$GITHUB_REPOSITORY" -f btop_version="$LATEST"
+          else
+            echo "Up to date ($CURRENT)"
+          fi
