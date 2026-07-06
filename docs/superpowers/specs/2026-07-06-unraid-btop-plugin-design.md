@@ -121,7 +121,7 @@ Aucun paramètre d'entrée → pas de surface d'injection. Réservé aux session
 
 Entrée : `tag=btop` uniquement (liste blanche stricte — toute autre valeur = HTTP 400). Comportement :
 
-1. si un ttyd vivant écoute déjà sur `/var/tmp/btop.sock` → répond `busy` (le bouton affiche « session déjà ouverte ») ;
+1. si un ttyd vivant écoute déjà sur `/var/tmp/btop.sock` → répond `busy` ; le bouton ouvre quand même la fenêtre `/logterminal/btop/` : c'est le seul moyen de récupérer une session orpheline (popup bloquée avant la première connexion). Contrepartie assumée : un second viewer simultané obtient une fenêtre vide (`-m 1` refuse le 2ᵉ client) ;
 2. si le socket existe sans processus (orphelin) → le supprime ;
 3. vérifie que `/usr/bin/btop` existe, sinon répond une erreur explicite ;
 4. lance : `ttyd -s 9 -o -m 1 -i /var/tmp/btop.sock btop` (mêmes options que l'invocation native d'Unraid dans `OpenTerminal.php` ; utiliser le wrapper `ttyd-exec` s'il est présent sur le système, comme le fait l'OS). btop utilise la config CLI normale (`/root/.config/btop`) ;
@@ -179,7 +179,7 @@ Sur PR et push de branche : exécute `build.sh` + smoke test, sans release ni co
 | Aucun capteur de température | Champ temp masqué, le reste de la tuile fonctionne |
 | Binaire btop absent (install corrompue) | `start_session.php` répond une erreur ; message clair côté bouton plein écran |
 | Socket orphelin (crash ttyd) | Nettoyé par `start_session.php` avant relance |
-| Session plein écran déjà occupée (`-m 1`) | Message « session déjà ouverte », pas de fenêtre cassée |
+| Session plein écran déjà occupée (`-m 1`) | Le bouton rouvre la fenêtre (reconnexion à une session orpheline) ; un 2ᵉ viewer simultané obtient une fenêtre vide — compromis documenté §3.5 |
 | `tag` non whitelisté | HTTP 400, rien n'est exécuté |
 | Téléchargement `.txz` échoué / MD5 invalide | Le système de plugins Unraid annule l'installation (comportement natif du `.plg`) |
 | Désinstallation | Session tuée, paquet retiré, config utilisateur conservée sur la flash |
