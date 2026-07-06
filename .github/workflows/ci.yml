@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install xmllint (not shipped on ubuntu-latest)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
       - name: PHP unit tests
         run: php tests/php/run_tests.php
       - name: PHP syntax (php + page files)
