@@ -38,7 +38,8 @@ Contrainte de compatibilité : **les défauts reproduisent exactement le comport
 | --- | --- | --- | --- |
 | `SHOW_LOAD` | `yes` | `yes`/`no` | Load average dans l'en-tête |
 | `SHOW_TEMP` | `yes` | `yes`/`no` | Température CPU dans l'en-tête |
-| `SHOW_UPTIME` | `no` | `yes`/`no` | Uptime + nombre de processus dans l'en-tête |
+| `SHOW_UPTIME` | `no` | `yes`/`no` | Uptime dans l'en-tête |
+| `SHOW_NPROCS` | `no` | `yes`/`no` | Nombre de processus dans l'en-tête (indépendant de l'uptime) |
 | `SHOW_DISKIO` | `no` | `yes`/`no` | Ligne débits disque (lecture/écriture par s) |
 | `SHOW_NET` | `no` | `yes`/`no` | Ligne débits réseau (↓/↑ par s) |
 | `SHOW_PROCS` | `yes` | `yes`/`no` | Tableau des processus |
@@ -69,7 +70,7 @@ Débits : `stats.php` prélève diskio/net **avant et après** l'`usleep(500000)
 ### 5.2 `stats.php`
 
 1. Lit et valide la cfg (fonction `btop_read_cfg(): array` dans `stats_lib.php`, défauts/clamp centralisés — testable) ;
-2. Ne collecte **que les sections activées** : le double échantillonnage (500 ms) n'a lieu que si au moins une section à delta est active (`SHOW_PROCS`, `SHOW_DISKIO`, `SHOW_NET`) ; `nprocs` (pour `SHOW_UPTIME`) se calcule sur un seul échantillon ; pas de lecture `diskstats`/`net` si la section est désactivée ;
+2. Ne collecte **que les sections activées** : le double échantillonnage (500 ms) n'a lieu que si au moins une section à delta est active (`SHOW_PROCS`, `SHOW_DISKIO`, `SHOW_NET`) ; `nprocs` (pour `SHOW_NPROCS`, indépendant de `SHOW_UPTIME`) se calcule sur un seul échantillon ; pas de lecture `diskstats`/`net` si la section est désactivée ;
 3. Réponse JSON : clés présentes uniquement si activées, plus `refresh_ms` toujours présent :
 
 ```json
