@@ -19,11 +19,18 @@ jobs:
         id: btop
         env:
           GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.btop_version }}
         run: |
-          V="${{ inputs.btop_version }}"
+          V="$INPUT_VERSION"
           if [ -z "$V" ]; then
             V="$(gh api repos/aristocratos/btop/releases/latest --jq .tag_name)"
             V="${V#v}"
+          fi
+          # Strict allowlist: reject anything that is not a plain version tag
+          # (defends against shell injection via a malicious upstream tag name)
+          if ! printf '%s' "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9]+)*$'; then
+            echo "::error::rejecting suspicious btop version: $V"
+            exit 1
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
 
@@ -46,38 +53,46 @@ jobs:
           bash scripts/test_php_syntax.sh
 
       - name: Build package
-        run: bash scripts/build.sh "${{ steps.btop.outputs.version }}" "${{ steps.plg.outputs.version }}"
+        env:
+          BTOP_VERSION_TARGET: ${{ steps.btop.outputs.version }}
+          PLUGIN_VERSION: ${{ steps.plg.outputs.version }}
+        run: bash scripts/build.sh "$BTOP_VERSION_TARGET" "$PLUGIN_VERSION"
 
       - name: Smoke test the binary
+        env:
+          BTOP_VERSION_TARGET: ${{ steps.btop.outputs.version }}
         run: |
           OUT="$(dist/pkgroot/usr/bin/btop --version)"
           echo "$OUT"
-          echo "$OUT" | grep -F "${{ steps.btop.outputs.version }}"
+          echo "$OUT" | grep -F "$BTOP_VERSION_TARGET"
 
       - name: Create GitHub release (artifacts first, plg bump after)
         env:
           GH_TOKEN: ${{ github.token }}
+          BTOP_VERSION_TARGET: ${{ steps.btop.outputs.version }}
+          PLUGIN_VERSION: ${{ steps.plg.outputs.version }}
         run: |
-          gh release create "${{ steps.plg.outputs.version }}" \
+          NOTES="$(printf 'Packages btop v%s.\nUpstream artifact SHA256: %s' "$BTOP_VERSION_TARGET" "$(cat dist/btop-*.sha256)")"
+          gh release create "$PLUGIN_VERSION" \
             dist/unraid.btop-*.txz dist/unraid.btop-*.md5 \
-            -t "${{ steps.plg.outputs.version }} (btop v${{ steps.btop.outputs.version }})" \
-            -n "Packages btop v${{ steps.btop.outputs.version }}.
-          Upstream artifact SHA256: $(cat dist/btop-*.sha256)"
+            -t "$PLUGIN_VERSION (btop v$BTOP_VERSION_TARGET)" \
+            -n "$NOTES"
 
       - name: Bump btop.plg and BTOP_VERSION
+        env:
+          BTOP_VERSION_TARGET: ${{ steps.btop.outputs.version }}
+          PLUGIN_VERSION: ${{ steps.plg.outputs.version }}
         run: |
-          PLGVER="${{ steps.plg.outputs.version }}"
-          BTOPVER="${{ steps.btop.outputs.version }}"
           MD5="$(awk '{print $1}' dist/unraid.btop-*.md5)"
-          sed -i -E "s|(<!ENTITY version +\").*(\">)|\1${PLGVER}\2|" btop.plg
+          sed -i -E "s|(<!ENTITY version +\").*(\">)|\1${PLUGIN_VERSION}\2|" btop.plg
           sed -i -E "s|(<!ENTITY md5 +\").*(\">)|\1${MD5}\2|" btop.plg
-          awk -v entry="###${PLGVER}\n- Update btop to v${BTOPVER}" \
+          awk -v entry="###${PLUGIN_VERSION}\n- Update btop to v${BTOP_VERSION_TARGET}" \
             '{print} /^<CHANGES>$/{print entry}' btop.plg > btop.plg.new
           mv btop.plg.new btop.plg
           xmllint --noout --noent btop.plg
-          echo "$BTOPVER" > BTOP_VERSION
+          echo "$BTOP_VERSION_TARGET" > BTOP_VERSION
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add btop.plg BTOP_VERSION
-          git commit -m "release: ${PLGVER} (btop v${BTOPVER}) [skip ci]"
+          git commit -m "release: ${PLUGIN_VERSION} (btop v${BTOP_VERSION_TARGET}) [skip ci]"
           git push
