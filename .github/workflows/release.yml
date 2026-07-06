@@ -28,7 +28,7 @@ jobs:
           fi
           # Strict allowlist: reject anything that is not a plain version tag
           # (defends against shell injection via a malicious upstream tag name)
-          if ! printf '%s' "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9]+)*$'; then
+          if ! [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9]+)*$ ]]; then
             echo "::error::rejecting suspicious btop version: $V"
             exit 1
           fi
