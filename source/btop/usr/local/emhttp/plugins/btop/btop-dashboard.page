@@ -7,7 +7,7 @@ Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0',
    (Settings > User Utilities > btop). Content is rendered client-side by
    scripts/btop-tile.js polling include/stats.php. */
 require_once '/usr/local/emhttp/plugins/btop/include/stats_lib.php';
-$btop_cfg = btop_validate_cfg(parse_plugin_cfg('btop', true));
+$btop_cfg = btop_read_cfg();
 
 $btop_header = '';
 if ($btop_cfg['SHOW_LOAD'] === 'yes') $btop_header .= '<span id="btop-load">_(Loading)_&hellip;</span>';

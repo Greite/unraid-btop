@@ -3,12 +3,7 @@
 // config; instantaneous rates need two samples 500 ms apart.
 require_once __DIR__ . '/stats_lib.php';
 
-$raw = [];
-if (is_file('/usr/local/emhttp/plugins/dynamix/include/Wrappers.php')) {
-    require_once '/usr/local/emhttp/plugins/dynamix/include/Wrappers.php';
-    $raw = parse_plugin_cfg('btop', true);
-}
-$cfg = btop_validate_cfg($raw);
+$cfg = btop_read_cfg();
 
 header('Content-Type: application/json');
 header('Cache-Control: no-store');

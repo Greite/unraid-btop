@@ -132,3 +132,17 @@ function btop_validate_cfg(array $raw): array {
         'REFRESH_MS'  => $int($raw['REFRESH_MS'] ?? null, 3000, 2000, 10000),
     ];
 }
+
+function btop_read_cfg(): array {
+    $raw = [];
+    if (is_file('/usr/local/emhttp/plugins/dynamix/include/Wrappers.php')) {
+        require_once '/usr/local/emhttp/plugins/dynamix/include/Wrappers.php';
+        try {
+            $parsed = parse_plugin_cfg('btop', true);
+            if (is_array($parsed)) $raw = $parsed;
+        } catch (\Throwable $e) {
+            $raw = []; // syntactically corrupt cfg: fall back to defaults
+        }
+    }
+    return btop_validate_cfg($raw);
+}

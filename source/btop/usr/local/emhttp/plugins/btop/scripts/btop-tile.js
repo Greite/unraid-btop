@@ -87,6 +87,11 @@
     setText('btop-rates', 'Stats unavailable');
   }
 
+  function showSessionError(msg) {
+    var target = el('btop-procs') || el('btop-rates') || el('btop-load');
+    if (target) target.textContent = msg;
+  }
+
   function tick() {
     if (document.hidden || !el('tblBtopDash')) return;
     fetch('/plugins/btop/include/stats.php')
@@ -108,10 +113,10 @@
         if (res.ok || res.status === 'busy') {
           window.open('/logterminal/btop/', 'btop', 'width=1280,height=800');
         } else {
-          showError();
+          showSessionError(res.error || 'btop unavailable');
         }
       })
-      .catch(showError);
+      .catch(function () { showSessionError('btop unavailable'); });
   }
 
   function init() {

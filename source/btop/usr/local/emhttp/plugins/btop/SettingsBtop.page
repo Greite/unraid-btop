@@ -6,7 +6,7 @@ Icon="btop.png"
 /* btop tile settings. Values are written to /boot/config/plugins/btop/btop.cfg
    by Unraid's native /update.php endpoint (session-authenticated). */
 require_once '/usr/local/emhttp/plugins/btop/include/stats_lib.php';
-$btop_cfg = btop_validate_cfg(parse_plugin_cfg('btop', true));
+$btop_cfg = btop_read_cfg();
 
 function btop_sel($current, $value): string {
     return $current === $value ? ' selected' : '';

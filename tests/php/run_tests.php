@@ -72,5 +72,7 @@ check('cfg count clamped low', 3, btop_validate_cfg(['PROC_COUNT' => '1'])['PROC
 check('cfg count non-numeric -> default', 5, btop_validate_cfg(['PROC_COUNT' => 'abc'])['PROC_COUNT']);
 check('cfg refresh clamped', 2000, btop_validate_cfg(['REFRESH_MS' => '500'])['REFRESH_MS']);
 
+check('read_cfg returns validated defaults without dynamix', btop_validate_cfg([]), btop_read_cfg());
+
 echo $failures === 0 ? "ALL TESTS PASSED\n" : "$failures TEST(S) FAILED\n";
 exit($failures === 0 ? 0 : 1);
