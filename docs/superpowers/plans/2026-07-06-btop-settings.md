@@ -1,4 +1,4 @@
-# Page de settings + tuile configurable — Implementation Plan
+# Page de settings + tuile configurable - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -35,10 +35,10 @@
 - Consumes: harnais `check()` et fixtures existants.
 - Produces (consommé par Tasks 2-4) :
   - `btop_read_uptime(string $procRoot): ?int`
-  - `btop_sample_diskio(string $procRoot): ?array` — `['read_sectors' => int, 'write_sectors' => int]` ou `null`
-  - `btop_sample_net(string $sysRoot): ?array` — `['rx' => int, 'tx' => int]` ou `null`
+  - `btop_sample_diskio(string $procRoot): ?array` - `['read_sectors' => int, 'write_sectors' => int]` ou `null`
+  - `btop_sample_net(string $sysRoot): ?array` - `['rx' => int, 'tx' => int]` ou `null`
   - `btop_top_procs(array $s0, array $s1, float $elapsed, int $n = 5, int $clkTck = 100, string $sort = 'cpu'): array`
-  - `btop_validate_cfg(array $raw): array` — retourne les 9 clés validées (toggles en string `yes`/`no`, `PROC_SORT` string, `PROC_COUNT` et `REFRESH_MS` en **int**)
+  - `btop_validate_cfg(array $raw): array` - retourne les 9 clés validées (toggles en string `yes`/`no`, `PROC_SORT` string, `PROC_COUNT` et `REFRESH_MS` en **int**)
 
 - [ ] **Step 1: Créer les fixtures**
 
@@ -241,7 +241,7 @@ Expected: `ALL TESTS PASSED` (13 checks v1 + 21 checks v2), exit 0.
 
 ```bash
 git add source/btop/usr/local/emhttp/plugins/btop/include/stats_lib.php tests/
-git commit -m "feat: lib v2 — uptime, diskio/net agrégés, tri procs, validation cfg (fixtures)"
+git commit -m "feat: lib v2 - uptime, diskio/net agrégés, tri procs, validation cfg (fixtures)"
 ```
 
 ---
@@ -253,7 +253,7 @@ git commit -m "feat: lib v2 — uptime, diskio/net agrégés, tri procs, validat
 - Modify: `source/btop/usr/local/emhttp/plugins/btop/include/stats.php` (remplacement complet)
 
 **Interfaces:**
-- Consumes: toutes les fonctions de la Task 1 ; `parse_plugin_cfg('btop', true)` (dynamix, présent sur le serveur uniquement — garde `is_file` pour l'exécution locale).
+- Consumes: toutes les fonctions de la Task 1 ; `parse_plugin_cfg('btop', true)` (dynamix, présent sur le serveur uniquement - garde `is_file` pour l'exécution locale).
 - Produces (consommé par le JS, Task 4) : JSON avec `refresh_ms` (toujours, int) et, seulement si activés : `load`, `cpu_temp`, `uptime`, `nprocs`, `diskio` (`{read_bps, write_bps}` ou `null`), `net` (`{rx_bps, tx_bps}` ou `null`), `procs`.
 
 - [ ] **Step 1: Créer `default.cfg`**
@@ -339,7 +339,7 @@ Run: `bash scripts/test_php_syntax.sh && php tests/php/run_tests.php`
 Expected: `PHP syntax OK` puis `ALL TESTS PASSED`.
 
 Run (smoke local, sans dynamix → défauts) : `php source/btop/usr/local/emhttp/plugins/btop/include/stats.php`
-Expected: JSON avec `refresh_ms`, `load`, `cpu_temp` (probablement `null` sur macOS), `procs` — et SANS `uptime`/`diskio`/`net` (défauts `no`).
+Expected: JSON avec `refresh_ms`, `load`, `cpu_temp` (probablement `null` sur macOS), `procs` - et SANS `uptime`/`diskio`/`net` (défauts `no`).
 
 - [ ] **Step 4: Commit**
 
@@ -433,7 +433,7 @@ git commit -m "feat: page de settings (Settings > User Utilities > btop)"
 
 **Interfaces:**
 - Consumes: `btop_validate_cfg()` (Task 1), JSON de `stats.php` (Task 2), page `/Settings/SettingsBtop` (Task 3), `POST include/start_session.php` (v1, inchangé).
-- Produces: DOM ids `#btop-load`, `#btop-temp`, `#btop-uptime`, `#btop-rates`, `#btop-procs`, `#btop-fullscreen`, tbody `#tblBtopDash` — chacun présent seulement si sa section est activée (sauf fullscreen/tbody, toujours là).
+- Produces: DOM ids `#btop-load`, `#btop-temp`, `#btop-uptime`, `#btop-rates`, `#btop-procs`, `#btop-fullscreen`, tbody `#tblBtopDash` - chacun présent seulement si sa section est activée (sauf fullscreen/tbody, toujours là).
 
 - [ ] **Step 1: Remplacer `btop-dashboard.page`**
 
@@ -493,7 +493,7 @@ EOT;
 <script src="/plugins/btop/scripts/btop-tile.js"></script>
 ```
 
-(Attention : heredoc `<<<EOT` interpolé — pas le nowdoc `<<<'EOT'` de la v1 — car `$btop_header`/`$btop_rates`/`$btop_procs` doivent s'insérer. Le `EOT;` final reste en colonne 0.)
+(Attention : heredoc `<<<EOT` interpolé - pas le nowdoc `<<<'EOT'` de la v1 - car `$btop_header`/`$btop_rates`/`$btop_procs` doivent s'insérer. Le `EOT;` final reste en colonne 0.)
 
 - [ ] **Step 2: Remplacer `btop-tile.js`**
 
@@ -651,7 +651,7 @@ git commit -m "feat: tuile pilotée par la config (uptime, débits disque/résea
 
 Exécutée par le contrôleur (accès `ssh unraid`) avec l'utilisateur pour la partie visuelle.
 
-**Files:** aucun nouveau — déploiement et vérification.
+**Files:** aucun nouveau - déploiement et vérification.
 
 - [ ] **Step 1: Déployer les fichiers en live sur le serveur (test avant merge)**
 
@@ -664,7 +664,7 @@ rsync -r --delete source/btop/usr/local/emhttp/plugins/btop/ unraid:/usr/local/e
 ```bash
 ssh unraid 'php /usr/local/emhttp/plugins/btop/include/stats.php; echo'
 ```
-Expected: JSON avec `refresh_ms`, `load`, `cpu_temp`, `procs` (défauts v1 — pas encore de btop.cfg).
+Expected: JSON avec `refresh_ms`, `load`, `cpu_temp`, `procs` (défauts v1 - pas encore de btop.cfg).
 
 ```bash
 ssh unraid 'printf "SHOW_DISKIO=\"yes\"\nSHOW_NET=\"yes\"\nSHOW_UPTIME=\"yes\"\nPROC_SORT=\"mem\"\nPROC_COUNT=\"8\"\n" > /boot/config/plugins/btop/btop.cfg && php /usr/local/emhttp/plugins/btop/include/stats.php; echo'

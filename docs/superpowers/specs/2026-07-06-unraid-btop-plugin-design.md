@@ -1,4 +1,4 @@
-# Spec — Plugin Unraid « btop »
+# Spec - Plugin Unraid « btop »
 
 Date : 2026-07-06
 Statut : validé (design approuvé en session de brainstorming, révisé : tuile native stats au lieu de l'iframe)
@@ -20,7 +20,7 @@ Version minimale d'Unraid : **6.12.0** (nouveau dashboard à tuiles + infra `log
 | Décision | Choix | Alternatives écartées |
 | --- | --- | --- |
 | Forme du panneau dashboard | Tuile native HTML (stats lues depuis /proc et les capteurs) + bouton plein écran vers le vrai btop | Iframe btop live via ttyd (un seul viewer, session à gérer) ; tuile-bouton seule |
-| Pourquoi pas « extraire » btop | btop est une TUI sans mode batch/export (ni JSON ni texte) : impossible de scraper sa sortie proprement | — |
+| Pourquoi pas « extraire » btop | btop est une TUI sans mode batch/export (ni JSON ni texte) : impossible de scraper sa sortie proprement | - |
 | Contenu de la tuile | Ce qu'Unraid n'affiche pas déjà : top processus (CPU/RAM), load average, température CPU | Dupliquer les jauges CPU/RAM/réseau déjà natives du dashboard |
 | Backend plein écran | Infra ttyd/nginx native d'Unraid (`/logterminal/<tag>/` → `unix:/var/tmp/<tag>.sock`, auth Unraid incluse) | ttyd dédié sur un port TCP (pas d'auth, mixed-content HTTPS) |
 | Distribution | Community Apps, template dans `Greite/unraid-templates` | Repo perso seul ; install locale manuelle |
@@ -29,7 +29,7 @@ Version minimale d'Unraid : **6.12.0** (nouveau dashboard à tuiles + infra `log
 | Versioning | Date (`YYYY.MM.DD`), convention plugins Unraid | SemVer |
 | Hébergement des paquets | GitHub Releases (+ MD5 dans le `.plg`) | `.txz` committés dans le repo |
 | CI | GitHub Actions : release automatisée + suivi automatique des versions btop upstream (full-auto, gardé par un smoke test) | Build manuel ; PR d'approbation avant chaque release |
-| Architectures | x86_64 uniquement — Unraid n'existe que sur cette plateforme (état 2026) | Pipeline arch-ready paramétré (complexité sans cible réelle) |
+| Architectures | x86_64 uniquement - Unraid n'existe que sur cette plateforme (état 2026) | Pipeline arch-ready paramétré (complexité sans cible réelle) |
 
 ## 3. Architecture
 
@@ -86,13 +86,13 @@ Icon="btop.png"
 Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0','>=')"
 ```
 
-Corps : enregistre une tuile via `$mytiles['btop']['column1']` — un `<tbody>` avec le markup standard des tuiles (`title="_(btop)_"`, `tile-header`, icône, contrôles à droite, spans `w18/w26/w36/w44` pour l'alignement). Contenu **100 % HTML natif** :
+Corps : enregistre une tuile via `$mytiles['btop']['column1']` - un `<tbody>` avec le markup standard des tuiles (`title="_(btop)_"`, `tile-header`, icône, contrôles à droite, spans `w18/w26/w36/w44` pour l'alignement). Contenu **100 % HTML natif** :
 
 - une ligne d'en-tête de données : **load average** (1/5/15 min) et **température CPU** ;
 - un tableau **top 5 processus** : nom, CPU %, mémoire (RSS lisible), trié par CPU ;
-- dans `tile-header-right` : un bouton plein écran (`fa-expand`) qui appelle `start_session.php` puis `window.open('/logterminal/btop/')` — c'est là que vit le vrai btop.
+- dans `tile-header-right` : un bouton plein écran (`fa-expand`) qui appelle `start_session.php` puis `window.open('/logterminal/btop/')` - c'est là que vit le vrai btop.
 
-`scripts/btop-tile.js` : au chargement du dashboard, requête `stats.php` puis rafraîchissement toutes les 3 s (uniquement quand l'onglet est visible — `document.visibilityState` — pour ne pas échantillonner pour rien). Rendu par simple remplacement du contenu du tableau. Plusieurs onglets/viewers simultanés : aucun problème, l'endpoint est sans état.
+`scripts/btop-tile.js` : au chargement du dashboard, requête `stats.php` puis rafraîchissement toutes les 3 s (uniquement quand l'onglet est visible - `document.visibilityState` - pour ne pas échantillonner pour rien). Rendu par simple remplacement du contenu du tableau. Plusieurs onglets/viewers simultanés : aucun problème, l'endpoint est sans état.
 
 ### 3.4 L'endpoint `stats.php`
 
@@ -112,20 +112,20 @@ Répond un JSON :
 Sources :
 
 - `load` : `/proc/loadavg` ;
-- `cpu_temp` : capteurs hwmon (`/sys/class/hwmon`), en réutilisant si possible la sélection de capteur déjà faite par dynamix (config « system temp ») ; `null` si aucun capteur — la tuile masque alors le champ ;
-- `procs` : top 5 par **CPU instantané** — deux échantillons de `/proc/<pid>/stat` espacés d'un court intervalle (~500 ms), delta de temps CPU rapporté au temps écoulé (même principe que top/btop). `mem` = RSS. Détails d'implémentation (agrégation par processus, exclusion des kernel threads) fixés au plan.
+- `cpu_temp` : capteurs hwmon (`/sys/class/hwmon`), en réutilisant si possible la sélection de capteur déjà faite par dynamix (config « system temp ») ; `null` si aucun capteur - la tuile masque alors le champ ;
+- `procs` : top 5 par **CPU instantané** - deux échantillons de `/proc/<pid>/stat` espacés d'un court intervalle (~500 ms), delta de temps CPU rapporté au temps écoulé (même principe que top/btop). `mem` = RSS. Détails d'implémentation (agrégation par processus, exclusion des kernel threads) fixés au plan.
 
 Aucun paramètre d'entrée → pas de surface d'injection. Réservé aux sessions authentifiées (servi par emhttp comme toute page de plugin).
 
 ### 3.5 L'endpoint `start_session.php` (plein écran)
 
-Entrée : `tag=btop` uniquement (liste blanche stricte — toute autre valeur = HTTP 400). Comportement :
+Entrée : `tag=btop` uniquement (liste blanche stricte - toute autre valeur = HTTP 400). Comportement :
 
 1. si un ttyd vivant écoute déjà sur `/var/tmp/btop.sock` → répond `busy` ; le bouton ouvre quand même la fenêtre `/logterminal/btop/` : c'est le seul moyen de récupérer une session orpheline (popup bloquée avant la première connexion). Contrepartie assumée : un second viewer simultané obtient une fenêtre vide (`-m 1` refuse le 2ᵉ client) ;
 2. si le socket existe sans processus (orphelin) → le supprime ;
 3. vérifie que `/usr/bin/btop` existe, sinon répond une erreur explicite ;
 4. lance : `ttyd -s 9 -o -m 1 -i /var/tmp/btop.sock btop` (mêmes options que l'invocation native d'Unraid dans `OpenTerminal.php` ; utiliser le wrapper `ttyd-exec` s'il est présent sur le système, comme le fait l'OS). btop utilise la config CLI normale (`/root/.config/btop`) ;
-5. `-o` (once) + `-m 1` : la session s'arrête seule à la fermeture de la fenêtre — aucun processus résiduel. Un seul plein écran à la fois (limitation assumée, sans impact sur la tuile).
+5. `-o` (once) + `-m 1` : la session s'arrête seule à la fermeture de la fenêtre - aucun processus résiduel. Un seul plein écran à la fois (limitation assumée, sans impact sur la tuile).
 
 ### 3.6 Le CLI
 
@@ -138,7 +138,7 @@ Entrée : `tag=btop` uniquement (liste blanche stricte — toute autre valeur = 
 
 - Template `btop/btop.xml` ajouté au repo `Greite/unraid-templates` : `<Plugin>true</Plugin>`, `<PluginURL>` → `https://raw.githubusercontent.com/Greite/unraid-btop/main/btop.plg`, `<Icon>`, `<Overview>`, catégorie `Tools:System` (CA le classe côté plugins via `<Plugin>true</Plugin>`), `<Support>` → GitHub Issues du repo `unraid-btop` ;
 - ajout de la ligne correspondante dans le README de `unraid-templates` ;
-- point d'attention : les modérateurs CA peuvent exiger un thread de support sur le forum Unraid pour les plugins — à créer au moment de la soumission si demandé.
+- point d'attention : les modérateurs CA peuvent exiger un thread de support sur le forum Unraid pour les plugins - à créer au moment de la soumission si demandé.
 
 ## 5. CI & automatisation des releases
 
@@ -153,7 +153,7 @@ Déclencheurs : `workflow_dispatch` (input : version btop, défaut = latest) et 
 3. **smoke test** : exécute `./btop --version` sur le runner (binaire statique → tourne sur ubuntu-latest) et vérifie que la version rapportée correspond à la cible ; tout échec stoppe le workflow avant toute publication ;
 4. `build.sh` : construit `unraid.btop-<version-plugin>-x86_64-1.txz` + `.md5` (version plugin = date UTC `YYYY.MM.DD`, suffixe `a`, `b`… si une release existe déjà ce jour-là) ;
 5. crée la GitHub Release taguée avec les artefacts ;
-6. met à jour sur `main` : entités `version`/`md5` du `btop.plg`, entrée `<CHANGES>` (« Update btop to vX.Y.Z »), fichier `BTOP_VERSION` — commit via `GITHUB_TOKEN` (permission `contents: write`).
+6. met à jour sur `main` : entités `version`/`md5` du `btop.plg`, entrée `<CHANGES>` (« Update btop to vX.Y.Z »), fichier `BTOP_VERSION` - commit via `GITHUB_TOKEN` (permission `contents: write`).
 
 L'ordre 5→6 garantit qu'un `.plg` pointant sur la nouvelle version n'est jamais publié avant que les artefacts existent.
 
@@ -169,7 +169,7 @@ En cas d'échec (asset musl absent, format changé…), aucune release partielle
 
 ### 5.3 `ci.yml`
 
-Sur PR et push de branche : exécute `build.sh` + smoke test, sans release ni commit — vérifie que le packaging reste fonctionnel.
+Sur PR et push de branche : exécute `build.sh` + smoke test, sans release ni commit - vérifie que le packaging reste fonctionnel.
 
 ## 6. Gestion d'erreurs
 
@@ -179,14 +179,14 @@ Sur PR et push de branche : exécute `build.sh` + smoke test, sans release ni co
 | Aucun capteur de température | Champ temp masqué, le reste de la tuile fonctionne |
 | Binaire btop absent (install corrompue) | `start_session.php` répond une erreur ; message clair côté bouton plein écran |
 | Socket orphelin (crash ttyd) | Nettoyé par `start_session.php` avant relance |
-| Session plein écran déjà occupée (`-m 1`) | Le bouton rouvre la fenêtre (reconnexion à une session orpheline) ; un 2ᵉ viewer simultané obtient une fenêtre vide — compromis documenté §3.5 |
+| Session plein écran déjà occupée (`-m 1`) | Le bouton rouvre la fenêtre (reconnexion à une session orpheline) ; un 2ᵉ viewer simultané obtient une fenêtre vide - compromis documenté §3.5 |
 | `tag` non whitelisté | HTTP 400, rien n'est exécuté |
 | Téléchargement `.txz` échoué / MD5 invalide | Le système de plugins Unraid annule l'installation (comportement natif du `.plg`) |
 | Désinstallation | Session tuée, paquet retiré, config utilisateur conservée sur la flash |
 
 ## 7. Tests & validation
 
-1. **Build** : `scripts/build.sh` reproductible — vérifie le checksum du binaire upstream quand il est publié (sinon consigne le SHA256 calculé), produit `.txz` + `.md5` ; contrôle `tar -tf` du contenu attendu. Exécuté par la CI sur chaque PR (`ci.yml`) et à chaque release (`release.yml`, avec smoke test du binaire).
+1. **Build** : `scripts/build.sh` reproductible - vérifie le checksum du binaire upstream quand il est publié (sinon consigne le SHA256 calculé), produit `.txz` + `.md5` ; contrôle `tar -tf` du contenu attendu. Exécuté par la CI sur chaque PR (`ci.yml`) et à chaque release (`release.yml`, avec smoke test du binaire).
 2. **Test sur serveur réel** (le serveur Unraid de l'utilisateur) :
    - install via URL du `.plg` (branche de test) ;
    - tuile visible sur le dashboard : load, temp, top 5 processus cohérents avec `htop`/`btop`, refresh ~3 s ;
@@ -200,6 +200,6 @@ Sur PR et push de branche : exécute `build.sh` + smoke test, sans release ni co
 ## 8. Hors scope (v1)
 
 - Mode iframe « btop live » dans la tuile (écarté au profit de la tuile native ; possible en v2 commutable) ;
-- page de settings (nombre de processus affichés, intervalle de refresh) — valeurs fixes en v1 (5 processus, 3 s) ;
+- page de settings (nombre de processus affichés, intervalle de refresh) - valeurs fixes en v1 (5 processus, 3 s) ;
 - support GPU dans btop ;
-- architectures non x86_64 : sans objet — Unraid n'existe qu'en x86_64 (état 2026). btop publiant des binaires statiques pour toutes les archs courantes, le support pourrait être ajouté si Unraid changeait un jour de plateforme.
+- architectures non x86_64 : sans objet - Unraid n'existe qu'en x86_64 (état 2026). btop publiant des binaires statiques pour toutes les archs courantes, le support pourrait être ajouté si Unraid changeait un jour de plateforme.

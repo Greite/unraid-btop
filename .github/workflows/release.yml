@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       btop_version:
-        description: "btop version (e.g. 1.4.7) — empty = latest upstream"
+        description: "btop version (e.g. 1.4.7) - empty = latest upstream"
         required: false
         default: ""
 permissions:

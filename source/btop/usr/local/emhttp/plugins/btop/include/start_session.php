@@ -30,7 +30,7 @@ if (file_exists($sock)) @unlink($sock); // stale socket left by a crashed ttyd
 
 if (!is_executable($btop)) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'btop binary missing — reinstall the plugin']);
+    echo json_encode(['ok' => false, 'error' => 'btop binary missing - reinstall the plugin']);
     exit;
 }
 

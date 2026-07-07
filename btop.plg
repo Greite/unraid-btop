@@ -47,7 +47,7 @@ if [ ! -L /root/.config/btop ]; then
 fi
 echo ""
 echo "----------------------------------------------------"
-echo " btop installed — dashboard tile + 'btop' in the CLI"
+echo " btop installed - dashboard tile + 'btop' in the CLI"
 echo "----------------------------------------------------"
 </INLINE>
 </FILE>

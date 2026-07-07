@@ -19,7 +19,7 @@ jobs:
           LATEST="$(gh api repos/aristocratos/btop/releases/latest --jq .tag_name)"
           LATEST="${LATEST#v}"
           if [ "$CURRENT" != "$LATEST" ]; then
-            echo "New btop release: $LATEST (packaged: $CURRENT) — triggering release"
+            echo "New btop release: $LATEST (packaged: $CURRENT) - triggering release"
             gh workflow run release.yml -R "$GITHUB_REPOSITORY" -f btop_version="$LATEST"
           else
             echo "Up to date ($CURRENT)"

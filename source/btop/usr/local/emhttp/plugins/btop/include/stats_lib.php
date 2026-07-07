@@ -37,7 +37,7 @@ function btop_sample_procs(string $procRoot): array {
         $pid = (int)basename($dir);
         $stat = @file_get_contents("$dir/stat");
         if ($stat === false) continue;
-        // Kernel threads have an empty cmdline — skip them
+        // Kernel threads have an empty cmdline - skip them
         $cmdline = @file_get_contents("$dir/cmdline");
         if ($cmdline === false || $cmdline === '') continue;
         // comm is wrapped in parentheses and may contain spaces/parens

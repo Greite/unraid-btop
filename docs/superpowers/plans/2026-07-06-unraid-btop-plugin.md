@@ -1,4 +1,4 @@
-# Plugin Unraid btop — Implementation Plan
+# Plugin Unraid btop - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -17,9 +17,9 @@
 - Paquet : `unraid.btop-<version>-x86_64-1.txz` ; version plugin = date UTC `YYYY.MM.DD` (+ suffixe `a`, `b`… si collision de tag).
 - Binaire : asset officiel `btop-x86_64-unknown-linux-musl.tar.gz` de `aristocratos/btop` (v1.4.7 au moment du plan) ; structure interne `./btop/bin/btop`, `./btop/themes/*.theme`, `./btop/Img/icon.png`, `./btop/LICENSE`. Upstream ne publie pas de checksums → consigner le SHA256 calculé.
 - x86_64 uniquement. Pas de page de settings. Tuile : 5 processus, refresh 3 s (valeurs fixes).
-- Endpoints sans entrée utilisateur (aucun paramètre interprété) — pas de surface d'injection.
+- Endpoints sans entrée utilisateur (aucun paramètre interprété) - pas de surface d'injection.
 - Chemins runtime : socket `/var/tmp/btop.sock`, config CLI persistante `/boot/config/plugins/btop/config/` symlinée depuis `/root/.config/btop`.
-- Outillage : les scripts doivent tourner sur ubuntu-latest (CI, GNU tar/md5sum) **et** macOS (dev local, bsdtar/md5) — chaque script détecte l'outil disponible.
+- Outillage : les scripts doivent tourner sur ubuntu-latest (CI, GNU tar/md5sum) **et** macOS (dev local, bsdtar/md5) - chaque script détecte l'outil disponible.
 - Messages utilisateur de la tuile en anglais (langue standard des plugins CA) ; commentaires de code en anglais.
 
 ---
@@ -134,7 +134,7 @@ chmod +x scripts/test_build.sh
 - [ ] **Step 4: Lancer le test → échec attendu**
 
 Run: `bash scripts/test_build.sh`
-Expected: échec — `scripts/build.sh: No such file or directory`.
+Expected: échec - `scripts/build.sh: No such file or directory`.
 
 - [ ] **Step 5: Écrire `build.sh`**
 
@@ -223,10 +223,10 @@ git commit -m "feat: build reproductible du paquet unraid.btop (binaire officiel
 
 **Interfaces:**
 - Produces (consommé par Task 3 via `stats.php`) :
-  - `btop_read_loadavg(string $procRoot): ?array` — `[float, float, float]` ou `null` ;
-  - `btop_read_cpu_temp(string $hwmonRoot): ?int` — °C ou `null` si aucun capteur connu ;
-  - `btop_sample_procs(string $procRoot): array` — `pid => ['name' => string, 'ticks' => int, 'rss' => int]` (kernel threads exclus) ;
-  - `btop_top_procs(array $s0, array $s1, float $elapsed, int $n = 5, int $clkTck = 100): array` — liste triée de `['name' => string, 'cpu' => float, 'mem' => int]`.
+  - `btop_read_loadavg(string $procRoot): ?array` - `[float, float, float]` ou `null` ;
+  - `btop_read_cpu_temp(string $hwmonRoot): ?int` - °C ou `null` si aucun capteur connu ;
+  - `btop_sample_procs(string $procRoot): array` - `pid => ['name' => string, 'ticks' => int, 'rss' => int]` (kernel threads exclus) ;
+  - `btop_top_procs(array $s0, array $s1, float $elapsed, int $n = 5, int $clkTck = 100): array` - liste triée de `['name' => string, 'cpu' => float, 'mem' => int]`.
 
 - [ ] **Step 1: Créer les fixtures**
 
@@ -255,13 +255,13 @@ mkdir -p tests/php/fixtures/{proc_t0,proc_t1}/{100,200,300} \
 100 (qemu-system x) S 1 100 100 0 -1 4194560 100 0 20 0 530 112 12 8 20 0 4 0 300 999424000 2048 18446744073709551615
 ```
 
-`tests/php/fixtures/proc_t0/200/stat` (et identique dans `proc_t1/200/stat` — processus idle, delta 0) :
+`tests/php/fixtures/proc_t0/200/stat` (et identique dans `proc_t1/200/stat` - processus idle, delta 0) :
 
 ```
 200 (sshd) S 1 200 200 0 -1 4194560 10 0 2 0 40 20 1 1 20 0 1 0 500 12582912 3 18446744073709551615
 ```
 
-`tests/php/fixtures/proc_t0/300/stat` (et identique dans `proc_t1/300/stat` — kernel thread) :
+`tests/php/fixtures/proc_t0/300/stat` (et identique dans `proc_t1/300/stat` - kernel thread) :
 
 ```
 300 (kworker/0:1) I 2 0 0 0 -1 69238880 0 0 0 0 5 0 0 0 20 0 1 0 60 0 0 18446744073709551615
@@ -345,7 +345,7 @@ exit($failures === 0 ? 0 : 1);
 - [ ] **Step 3: Lancer les tests → échec attendu**
 
 Run: `php tests/php/run_tests.php`
-Expected: erreur fatale — `stats_lib.php` introuvable.
+Expected: erreur fatale - `stats_lib.php` introuvable.
 
 - [ ] **Step 4: Implémenter `stats_lib.php`**
 
@@ -391,7 +391,7 @@ function btop_sample_procs(string $procRoot): array {
         $pid = (int)basename($dir);
         $stat = @file_get_contents("$dir/stat");
         if ($stat === false) continue;
-        // Kernel threads have an empty cmdline — skip them
+        // Kernel threads have an empty cmdline - skip them
         $cmdline = @file_get_contents("$dir/cmdline");
         if ($cmdline === false || $cmdline === '') continue;
         // comm is wrapped in parentheses and may contain spaces/parens
@@ -502,7 +502,7 @@ if (file_exists($sock)) @unlink($sock); // stale socket left by a crashed ttyd
 
 if (!is_executable($btop)) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'btop binary missing — reinstall the plugin']);
+    echo json_encode(['ok' => false, 'error' => 'btop binary missing - reinstall the plugin']);
     exit;
 }
 
@@ -735,7 +735,7 @@ git commit -m "feat: tuile dashboard native (load, temp, top processus) + plein 
 
 - [ ] **Step 1: Écrire `btop.plg`**
 
-Note : `version` et `md5` contiennent des valeurs de bootstrap — la première exécution de `release.yml` (Task 6) les remplace par les vraies valeurs avant toute installation réelle.
+Note : `version` et `md5` contiennent des valeurs de bootstrap - la première exécution de `release.yml` (Task 6) les remplace par les vraies valeurs avant toute installation réelle.
 
 ```xml
 <?xml version='1.0' standalone='yes'?>
@@ -782,7 +782,7 @@ if [ ! -L /root/.config/btop ]; then
 fi
 echo ""
 echo "----------------------------------------------------"
-echo " btop installed — dashboard tile + 'btop' in the CLI"
+echo " btop installed - dashboard tile + 'btop' in the CLI"
 echo "----------------------------------------------------"
 </INLINE>
 </FILE>
@@ -863,7 +863,7 @@ on:
   workflow_dispatch:
     inputs:
       btop_version:
-        description: "btop version (e.g. 1.4.7) — empty = latest upstream"
+        description: "btop version (e.g. 1.4.7) - empty = latest upstream"
         required: false
         default: ""
 permissions:
@@ -969,7 +969,7 @@ jobs:
           LATEST="$(gh api repos/aristocratos/btop/releases/latest --jq .tag_name)"
           LATEST="${LATEST#v}"
           if [ "$CURRENT" != "$LATEST" ]; then
-            echo "New btop release: $LATEST (packaged: $CURRENT) — triggering release"
+            echo "New btop release: $LATEST (packaged: $CURRENT) - triggering release"
             gh workflow run release.yml -R "$GITHUB_REPOSITORY" -f btop_version="$LATEST"
           else
             echo "Up to date ($CURRENT)"
@@ -978,7 +978,7 @@ jobs:
 
 - [ ] **Step 4: Valider les workflows localement (si PyYAML disponible)**
 
-Run: `python3 -c "import yaml" 2>/dev/null && for f in .github/workflows/*.yml; do python3 -c "import yaml; yaml.safe_load(open('$f'))" && echo "$f OK"; done || echo "PyYAML absent — GitHub validera les workflows au push"`
+Run: `python3 -c "import yaml" 2>/dev/null && for f in .github/workflows/*.yml; do python3 -c "import yaml; yaml.safe_load(open('$f'))" && echo "$f OK"; done || echo "PyYAML absent - GitHub validera les workflows au push"`
 Expected: trois lignes `... OK`, ou le message de repli (GitHub rejette de toute façon un workflow YAML invalide au push).
 
 - [ ] **Step 5: Commit**
@@ -1011,7 +1011,7 @@ resource monitor in your terminal, plus a native dashboard tile.
 - **`btop` CLI** available in SSH and the Unraid web terminal, with settings
   persisted on the flash drive across reboots.
 - **Dashboard tile**: load average, CPU temperature and the top 5 processes
-  by CPU — the things the stock Unraid dashboard doesn't show.
+  by CPU - the things the stock Unraid dashboard doesn't show.
 - **Fullscreen btop** in the browser (one click from the tile), served through
   Unraid's own authenticated web-terminal infrastructure.
 - **Auto-updated**: CI tracks btop releases daily, rebuilds, smoke tests and
@@ -1029,7 +1029,7 @@ Or search for “btop” in Community Applications (once listed).
 
 ## Notes
 
-- Don't install alongside the NerdTools btop package — both ship `/usr/bin/btop`.
+- Don't install alongside the NerdTools btop package - both ship `/usr/bin/btop`.
 - GPU monitoring inside btop is unavailable (the static musl binary cannot
   load NVML/ROCm libraries).
 - Uninstalling keeps your btop settings in `/boot/config/plugins/btop/config/`.
@@ -1107,7 +1107,7 @@ git add btop/btop.xml README.md
 git commit -m "feat: template plugin btop (unraid-btop)"
 ```
 
-(Ne pas pousser sans l'accord de l'utilisateur — la publication CA rend le plugin visible.)
+(Ne pas pousser sans l'accord de l'utilisateur - la publication CA rend le plugin visible.)
 
 ---
 
@@ -1115,7 +1115,7 @@ git commit -m "feat: template plugin btop (unraid-btop)"
 
 Cette tâche nécessite l'accord de l'utilisateur (création du repo public) et son serveur Unraid pour la validation finale.
 
-**Files:** aucun nouveau — exécution et vérification.
+**Files:** aucun nouveau - exécution et vérification.
 
 **Interfaces:**
 - Consumes: tout ce qui précède.

@@ -5,7 +5,7 @@ resource monitor in your terminal, plus a native dashboard tile.
 
 > **Attribution:** I am **not** the author of btop. btop is created and
 > maintained by [aristocratos](https://github.com/aristocratos) and its
-> contributors — all credit for the monitor itself goes to them. This
+> contributors - all credit for the monitor itself goes to them. This
 > repository is only an **Unraid integration**: it packages the official
 > btop binary and adds a dashboard widget and plugin plumbing around it.
 > Report btop bugs [upstream](https://github.com/aristocratos/btop/issues);
@@ -16,7 +16,7 @@ resource monitor in your terminal, plus a native dashboard tile.
 - **`btop` CLI** available in SSH and the Unraid web terminal, with settings
   persisted on the flash drive across reboots.
 - **Dashboard tile**: load average, CPU temperature and the top 5 processes
-  by CPU — the things the stock Unraid dashboard doesn't show.
+  by CPU - the things the stock Unraid dashboard doesn't show.
 - **Fullscreen btop** in the browser (one click from the tile), served through
   Unraid's own authenticated web-terminal infrastructure.
 - **Auto-updated**: CI tracks btop releases daily, rebuilds, smoke tests and
@@ -34,7 +34,7 @@ Or search for "btop" in Community Applications (once listed).
 
 ## Notes
 
-- Don't install alongside the NerdTools btop package — both ship `/usr/bin/btop`.
+- Don't install alongside the NerdTools btop package - both ship `/usr/bin/btop`.
 - GPU monitoring inside btop is unavailable (the static musl binary cannot
   load NVML/ROCm libraries).
 - Uninstalling keeps your btop settings in `/boot/config/plugins/btop/config/`.
@@ -53,7 +53,7 @@ the GitHub Release and bumps `btop.plg` + `BTOP_VERSION` on `main`.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). TL;DR: plugin/integration issues here,
-btop issues upstream, and never bump `btop.plg` manually — CI owns releases.
+btop issues upstream, and never bump `btop.plg` manually - CI owns releases.
 
 ## License
 
