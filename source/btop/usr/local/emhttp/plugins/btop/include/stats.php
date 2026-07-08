@@ -1,6 +1,8 @@
 <?php
 // Dashboard tile endpoint. Collects only the sections enabled in the plugin
-// config; instantaneous rates need two samples 500 ms apart.
+// config. Rates are computed against the previous request's samples persisted
+// in /var/tmp (see btop_rate_mode in stats_lib.php); only the first request
+// after boot/idle pays the 500 ms double-sample.
 require_once __DIR__ . '/stats_lib.php';
 
 $cfg = btop_read_cfg();
@@ -23,35 +25,59 @@ $wantDisk = $cfg['SHOW_DISKIO'] === 'yes';
 $wantNet = $cfg['SHOW_NET'] === 'yes';
 $wantNprocs = $cfg['SHOW_NPROCS'] === 'yes';
 
-$procs1 = null;
-if ($wantProcs || $wantDisk || $wantNet) {
-    $procs0 = $wantProcs ? btop_sample_procs('/proc') : null;
-    $disk0 = $wantDisk ? btop_sample_diskio('/proc') : null;
-    $net0 = $wantNet ? btop_sample_net('/sys/class/net') : null;
-    usleep(500000);
-    $procs1 = ($wantProcs || $wantNprocs) ? btop_sample_procs('/proc') : null;
-    $disk1 = $wantDisk ? btop_sample_diskio('/proc') : null;
-    $net1 = $wantNet ? btop_sample_net('/sys/class/net') : null;
+$samples = [];
+if ($wantProcs || $wantNprocs) $samples['procs'] = btop_sample_procs('/proc');
+if ($wantDisk) $samples['disk'] = btop_sample_diskio('/proc');
+if ($wantNet) $samples['net'] = btop_sample_net('/sys/class/net');
 
-    if ($wantProcs) {
-        $out['procs'] = btop_top_procs($procs0, $procs1, 0.5, $cfg['PROC_COUNT'], 100, $cfg['PROC_SORT']);
+if ($wantNprocs) $out['nprocs'] = isset($samples['procs']) ? count($samples['procs']) : null;
+if ($wantProcs) $out['mem_total'] = btop_read_memtotal('/proc');
+
+$wanted = array_keys(array_filter(['procs' => $wantProcs, 'disk' => $wantDisk, 'net' => $wantNet]));
+if ($wanted) {
+    $stateFile = '/var/tmp/btop-tile-state.json';
+    $now = microtime(true);
+    $prev = btop_state_load($stateFile);
+    $mode = btop_rate_mode($prev, $wanted, $now);
+
+    if ($mode === 'reuse') {
+        foreach (['procs' => $wantProcs, 'diskio' => $wantDisk, 'net' => $wantNet] as $key => $want) {
+            if ($want && array_key_exists($key, $prev['out'])) $out[$key] = $prev['out'][$key];
+        }
+    } else {
+        if ($mode === 'cold') {
+            $prevSamples = $samples;
+            $t0 = $now;
+            usleep(500000);
+            if ($wantProcs) $samples['procs'] = btop_sample_procs('/proc');
+            if ($wantDisk) $samples['disk'] = btop_sample_diskio('/proc');
+            if ($wantNet) $samples['net'] = btop_sample_net('/sys/class/net');
+            $now = microtime(true);
+            $elapsed = $now - $t0;
+        } else {
+            $prevSamples = $prev['samples'];
+            $elapsed = $now - (float)$prev['ts'];
+        }
+
+        $rates = [];
+        if ($wantProcs) {
+            $rates['procs'] = btop_top_procs($prevSamples['procs'] ?? [], $samples['procs'],
+                $elapsed, $cfg['PROC_COUNT'], 100, $cfg['PROC_SORT']);
+            if ($cfg['PROC_NAMES'] === 'container') {
+                $rates['procs'] = btop_map_container_names($rates['procs'], '/proc', '/var/lib/docker');
+            }
+        }
+        if ($wantDisk) {
+            $rates['diskio'] = ($prevSamples['disk'] ?? null) !== null && $samples['disk'] !== null
+                ? btop_disk_rates($prevSamples['disk'], $samples['disk'], $elapsed) : null;
+        }
+        if ($wantNet) {
+            $rates['net'] = ($prevSamples['net'] ?? null) !== null && $samples['net'] !== null
+                ? btop_net_rates($prevSamples['net'], $samples['net'], $elapsed) : null;
+        }
+        $out += $rates;
+        btop_state_save($stateFile, ['ts' => $now, 'samples' => $samples, 'out' => $rates]);
     }
-    if ($wantDisk) {
-        $out['diskio'] = ($disk0 !== null && $disk1 !== null) ? [
-            'read_bps'  => (int)(($disk1['read_sectors'] - $disk0['read_sectors']) * 512 / 0.5),
-            'write_bps' => (int)(($disk1['write_sectors'] - $disk0['write_sectors']) * 512 / 0.5),
-        ] : null;
-    }
-    if ($wantNet) {
-        $out['net'] = ($net0 !== null && $net1 !== null) ? [
-            'rx_bps' => (int)(($net1['rx'] - $net0['rx']) / 0.5),
-            'tx_bps' => (int)(($net1['tx'] - $net0['tx']) / 0.5),
-        ] : null;
-    }
-} elseif ($wantNprocs) {
-    $procs1 = btop_sample_procs('/proc');
 }
-
-if ($wantNprocs) $out['nprocs'] = $procs1 !== null ? count($procs1) : null;
 
 echo json_encode($out);

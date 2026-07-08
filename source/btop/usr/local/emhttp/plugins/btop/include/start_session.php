@@ -1,12 +1,20 @@
 <?php
 // Starts the fullscreen btop ttyd session behind Unraid's nginx
-// (/logterminal/btop/ -> unix:/var/tmp/btop.sock). Takes NO input:
-// socket path and command are fixed, so there is no injection surface.
+// (/logterminal/btop/ -> unix:/var/tmp/btop.sock). The only input is the
+// csrf_token; socket path and command are fixed, so there is no injection
+// surface.
+require_once __DIR__ . '/stats_lib.php';
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['ok' => false, 'error' => 'POST required']);
+    exit;
+}
+
+if (!btop_csrf_ok($_POST['csrf_token'] ?? null)) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'invalid csrf token']);
     exit;
 }
 
