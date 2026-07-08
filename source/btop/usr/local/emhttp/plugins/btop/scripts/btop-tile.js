@@ -6,7 +6,6 @@
   var refreshMs = 3000; // overridden by the refresh_ms of the first response
   var timer = null;
   var failures = 0;     // consecutive stats.php failures
-  var fsBusy = false;   // a fullscreen session request is in flight
 
   // Order matters: error messages land in the first section that exists
   var DATA_IDS = ['btop-rates', 'btop-procs', 'btop-load', 'btop-uptime', 'btop-temp'];
@@ -195,11 +194,6 @@
     if (target) target.textContent = t('statsUnavailable', 'Stats unavailable');
   }
 
-  function showSessionError(msg) {
-    var target = firstDataEl();
-    if (target) target.textContent = msg;
-  }
-
   function tick() {
     if (document.hidden || !el('tblBtopDash')) return;
     fetch('/plugins/btop/include/stats.php')
@@ -213,72 +207,8 @@
     timer = setInterval(tick, refreshMs);
   }
 
-  function setFsIcon(spinning) {
-    var link = el('btop-fullscreen');
-    var icon = link ? link.querySelector('i') : null;
-    if (!icon) return;
-    icon.classList.toggle('fa-expand', !spinning);
-    icon.classList.toggle('fa-circle-o-notch', spinning);
-    icon.classList.toggle('fa-spin', spinning);
-  }
-
-  function isShowingTerminal(win) {
-    try { return win.location.pathname.indexOf('/logterminal/btop') === 0; } catch (err) { return false; }
-  }
-
-  function openFullscreen(e) {
-    e.preventDefault();
-    if (fsBusy) return;
-    fsBusy = true;
-    // Open the window synchronously on the click: calling window.open() from
-    // the fetch callback loses the user activation and gets popup-blocked
-    // (always on Safari, elsewhere when the server takes a few seconds)
-    var win = window.open('', 'btop', 'width=1280,height=800');
-    if (win) {
-      try {
-        if (win.location.href === 'about:blank') {
-          win.document.title = 'btop';
-          win.document.body.textContent = t('starting', 'Starting btop') + '…';
-          win.document.body.style.cssText = 'background:#1b1d1e;color:#ddd;font-family:sans-serif;padding:1em';
-        }
-      } catch (err) { /* placeholder is cosmetic */ }
-    }
-    setFsIcon(true);
-
-    function fail(msg) {
-      if (win) { try { win.close(); } catch (err) { /* already closed */ } }
-      showSessionError(msg);
-    }
-
-    fetch('/plugins/btop/include/start_session.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'csrf_token=' + encodeURIComponent(typeof csrf_token !== 'undefined' ? csrf_token : '')
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
-        if (res.ok || res.status === 'busy') {
-          if (!win) { fail(t('popupBlocked', 'Popup blocked - allow popups for this server')); return; }
-          // Reuse the window if it already shows the terminal: reloading it
-          // would disconnect the single-client ttyd session (-m 1) and
-          // terminate it (-o)
-          if (isShowingTerminal(win)) { win.focus(); return; }
-          if (res.ok) { win.location = '/logterminal/btop/'; return; }
-          // busy with a blank window: the session lives in another browser
-          // (-m 1: navigating there would just show a refused connection)
-          fail(t('sessionBusy', 'btop is already open in another browser'));
-        } else {
-          fail(res.error || t('btopUnavailable', 'btop unavailable'));
-        }
-      })
-      .catch(function () { fail(t('btopUnavailable', 'btop unavailable')); })
-      .then(function () { setFsIcon(false); fsBusy = false; });
-  }
-
   function init() {
-    var fs = el('btop-fullscreen');
-    if (!fs) return;
-    fs.addEventListener('click', openFullscreen);
+    if (!el('tblBtopDash')) return;
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) tick(); // refresh right away when the tab comes back
     });

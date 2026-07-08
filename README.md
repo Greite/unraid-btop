@@ -22,8 +22,6 @@ resource monitor in your terminal, plus a native dashboard tile.
   processes - the things the stock Unraid dashboard doesn't show. Each
   section can be toggled and tuned (sort key, row count, refresh interval)
   in Settings > User Utilities > btop.
-- **Fullscreen btop** in the browser (one click from the tile), served through
-  Unraid's own authenticated web-terminal infrastructure.
 - **Auto-updated**: CI tracks btop releases daily, rebuilds, smoke tests and
   publishes a plugin update automatically.
 

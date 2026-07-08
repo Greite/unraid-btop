@@ -148,12 +148,5 @@ check('containerized proc gets cname', 'plex', $mapped[1]['cname'] ?? null);
 check('containerized proc keeps its process name', 'sshd', $mapped[1]['name']);
 check('host proc gets no cname', false, isset($mapped[0]['cname']));
 
-// --- v3: csrf validation for start_session.php ---
-check('csrf ok', true, btop_csrf_ok('SECRETTOKEN', "$fx/var_good.ini"));
-check('csrf wrong token', false, btop_csrf_ok('nope', "$fx/var_good.ini"));
-check('csrf missing ini', false, btop_csrf_ok('SECRETTOKEN', "$fx/does_not_exist.ini"));
-check('csrf empty token', false, btop_csrf_ok('', "$fx/var_good.ini"));
-check('csrf null token', false, btop_csrf_ok(null, "$fx/var_good.ini"));
-
 echo $failures === 0 ? "ALL TESTS PASSED\n" : "$failures TEST(S) FAILED\n";
 exit($failures === 0 ? 0 : 1);

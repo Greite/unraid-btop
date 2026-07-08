@@ -37,9 +37,6 @@ $mytiles['btop']['column1'] = <<<EOT
           <a href="/Settings/SettingsBtop" title="_(btop tile settings)_" aria-label="_(btop tile settings)_">
             <i class="fa fa-fw fa-cog control" aria-hidden="true"></i>
           </a>
-          <a href="#" id="btop-fullscreen" title="_(Open btop fullscreen)_" aria-label="_(Open btop fullscreen)_">
-            <i class="fa fa-fw fa-expand control" aria-hidden="true"></i>
-          </a>
         </span>
       </span>
     </span>
@@ -70,11 +67,7 @@ window.btopTileText = {
   procs: "_(procs)_",
   disk: "_(Disk)_",
   net: "_(Net)_",
-  statsUnavailable: "_(Stats unavailable)_",
-  btopUnavailable: "_(btop unavailable)_",
-  popupBlocked: "_(Popup blocked - allow popups for this server)_",
-  sessionBusy: "_(btop is already open in another browser)_",
-  starting: "_(Starting btop)_"
+  statsUnavailable: "_(Stats unavailable)_"
 };
 </script>
 <script src="/plugins/btop/scripts/btop-tile.js"></script>

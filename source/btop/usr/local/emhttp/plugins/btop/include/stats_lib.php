@@ -217,12 +217,6 @@ function btop_state_save(string $file, array $state): void {
     if (@file_put_contents($tmp, json_encode($state)) !== false) @rename($tmp, $file);
 }
 
-function btop_csrf_ok(?string $token, string $varIni = '/var/local/emhttp/var.ini'): bool {
-    $var = @parse_ini_file($varIni) ?: [];
-    $expected = (string)($var['csrf_token'] ?? '');
-    return $expected !== '' && is_string($token) && hash_equals($expected, $token);
-}
-
 function btop_validate_cfg(array $raw): array {
     $bool = fn($v, string $def) => in_array($v, ['yes', 'no'], true) ? $v : $def;
     $int = function ($v, int $def, int $min, int $max) {
