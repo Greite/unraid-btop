@@ -3,6 +3,8 @@
 Unraid plugin for [btop](https://github.com/aristocratos/btop): the btop
 resource monitor in your terminal, plus a native dashboard tile.
 
+![btop dashboard tile: load, CPU temperature, uptime, disk and network rates with braille sparklines, busiest processes](docs/images/dashboard-tile.png)
+
 > **Attribution:** I am **not** the author of btop. btop is created and
 > maintained by [aristocratos](https://github.com/aristocratos) and its
 > contributors - all credit for the monitor itself goes to them. This
