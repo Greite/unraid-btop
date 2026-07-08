@@ -15,7 +15,11 @@
 
 <CHANGES>
 ###2026.07.08
-- Update btop to v1.4.7
+- Dashboard tile: braille history sparklines on the disk and network rates, CPU and memory bars behind the process table values, CPU temperature colored above 70/85 C
+- Process table: full process names (command line based, no more 15-char kernel truncation), optional labelling by Docker container name (new setting), hovering a row shows both
+- Faster and steadier sampling: rates and CPU percentages are averaged over the real refresh interval; no more 500 ms pause on every tile poll
+- Settings page reorganized into titled sections
+- Removed the fullscreen btop button; run btop from the Unraid web terminal instead
 ###2026.07.06a
 - Settings page (Settings > User Utilities > btop): choose what the dashboard tile shows
 - New optional tile metrics: aggregated disk I/O rates, aggregated network rates, uptime, process count
