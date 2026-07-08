@@ -15,6 +15,8 @@ function btop_sel($current, $value): string {
 <form markdown="1" id="btopSettingsForm" method="POST" action="/update.php" target="progressFrame">
 <input type="hidden" name="#file" value="btop/btop.cfg">
 
+<div class="title"><span class="left"><i class="fa fa-header"></i>_(Tile header)_</span></div>
+
 _(Show load average)_:
 : <select name="SHOW_LOAD"><option value="yes"<?=btop_sel($btop_cfg['SHOW_LOAD'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_LOAD'], 'no')?>>_(No)_</option></select>
 
@@ -43,32 +45,43 @@ _(Show process count)_:
 > Shows the total number of running processes in the tile header.
 :end
 
+<div class="title"><span class="left"><i class="fa fa-exchange"></i>_(Disk and network throughput)_</span></div>
+
 _(Show aggregated disk I/O rates)_:
 : <select name="SHOW_DISKIO"><option value="yes"<?=btop_sel($btop_cfg['SHOW_DISKIO'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_DISKIO'], 'no')?>>_(No)_</option></select>
 
 :btop_show_diskio_plug:
-> Shows the instantaneous read/write throughput summed over all physical disks (sdX, nvme). Partitions and array (md) devices are excluded so nothing is counted twice.
+> Shows the read/write throughput, averaged over the refresh interval and summed over all physical disks (sdX, nvme). Partitions and array (md) devices are excluded so nothing is counted twice.
 :end
 
 _(Show aggregated network rates)_:
 : <select name="SHOW_NET"><option value="yes"<?=btop_sel($btop_cfg['SHOW_NET'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_NET'], 'no')?>>_(No)_</option></select>
 
 :btop_show_net_plug:
-> Shows the instantaneous download/upload throughput summed over the physical network interfaces. Bridges and bonds are excluded so traffic is not counted twice.
+> Shows the download/upload throughput, averaged over the refresh interval and summed over the physical network interfaces. Bridges and bonds are excluded so traffic is not counted twice.
 :end
+
+<div class="title"><span class="left"><i class="fa fa-tasks"></i>_(Process table)_</span></div>
 
 _(Show process table)_:
 : <select name="SHOW_PROCS"><option value="yes"<?=btop_sel($btop_cfg['SHOW_PROCS'], 'yes')?>>_(Yes)_</option><option value="no"<?=btop_sel($btop_cfg['SHOW_PROCS'], 'no')?>>_(No)_</option></select>
 
 :btop_show_procs_plug:
-> Shows the table of the busiest processes, with their instantaneous CPU usage and memory footprint (RSS).
+> Shows the table of the busiest processes, with their CPU usage over the last refresh interval and memory footprint (RSS).
+:end
+
+_(Label processes with)_:
+: <select name="PROC_NAMES"><option value="process"<?=btop_sel($btop_cfg['PROC_NAMES'], 'process')?>>_(Process name)_</option><option value="container"<?=btop_sel($btop_cfg['PROC_NAMES'], 'container')?>>_(Docker container name)_</option></select>
+
+:btop_proc_names_plug:
+> Labels each row of the process table with the process name, or with the name of the Docker container the process runs in. Processes running outside any container keep their process name; hovering a row always shows both.
 :end
 
 _(Sort processes by)_:
 : <select name="PROC_SORT"><option value="cpu"<?=btop_sel($btop_cfg['PROC_SORT'], 'cpu')?>>_(CPU)_</option><option value="mem"<?=btop_sel($btop_cfg['PROC_SORT'], 'mem')?>>_(Memory)_</option></select>
 
 :btop_proc_sort_plug:
-> Sorts the process table by instantaneous CPU usage or by memory usage (RSS).
+> Sorts the process table by CPU usage or by memory usage (RSS).
 :end
 
 _(Number of processes shown)_:
@@ -77,6 +90,8 @@ _(Number of processes shown)_:
 :btop_proc_count_plug:
 > Number of rows in the process table (3 to 10).
 :end
+
+<div class="title"><span class="left"><i class="fa fa-clock-o"></i>_(Refresh)_</span></div>
 
 _(Tile refresh interval)_:
 : <select name="REFRESH_MS"><?php foreach ([2000 => '2 s', 3000 => '3 s', 5000 => '5 s', 10000 => '10 s'] as $ms => $label) echo '<option value="' . $ms . '"' . btop_sel($btop_cfg['REFRESH_MS'], $ms) . '>' . $label . '</option>'; ?></select>
@@ -96,7 +111,7 @@ _(Tile refresh interval)_:
   var form = document.getElementById('btopSettingsForm');
   if (!form) return;
   var procsSel = form.elements['SHOW_PROCS'];
-  var dependents = [form.elements['PROC_SORT'], form.elements['PROC_COUNT']];
+  var dependents = [form.elements['PROC_NAMES'], form.elements['PROC_SORT'], form.elements['PROC_COUNT']];
   function syncProcFields() {
     for (var i = 0; i < dependents.length; i++) dependents[i].disabled = procsSel.value === 'no';
   }

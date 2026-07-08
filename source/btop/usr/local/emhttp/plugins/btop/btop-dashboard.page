@@ -53,6 +53,14 @@ EOT;
 <style>
 /* tabular figures: values keep the same width between refreshes, no jitter */
 #btop-load,#btop-temp,#btop-uptime,#btop-rates,#btop-procs{font-variant-numeric:tabular-nums}
+/* braille history sparklines (rendered by btop-tile.js), btop's own idiom */
+#btop-rates .btop-spark{opacity:.75;margin-right:.4em}
+#btop-rates .btop-rate-group+.btop-rate-group{margin-left:1.2em}
+/* long process names (full cmdline-based) ellipsize instead of wrapping */
+#btop-procs .w44{display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+/* CPU temperature thresholds; colors legible on light and dark themes */
+#btop-temp.btop-temp-warn{color:#e07b00}
+#btop-temp.btop-temp-hot{color:#d32f2f}
 </style>
 <script>
 window.btopTileText = {
@@ -65,6 +73,7 @@ window.btopTileText = {
   statsUnavailable: "_(Stats unavailable)_",
   btopUnavailable: "_(btop unavailable)_",
   popupBlocked: "_(Popup blocked - allow popups for this server)_",
+  sessionBusy: "_(btop is already open in another browser)_",
   starting: "_(Starting btop)_"
 };
 </script>
