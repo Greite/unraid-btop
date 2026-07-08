@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "btop">
   <!ENTITY author    "GreiteTurtle">
-  <!ENTITY version   "2026.07.06a">
-  <!ENTITY md5       "cc073aa59d6d045c525a9f6bbf3a0b4e">
+  <!ENTITY version   "2026.07.08">
+  <!ENTITY md5       "9b80fc4a127c984e5b9e63f01db7049f">
   <!ENTITY package   "unraid.btop-&version;-x86_64-1">
   <!ENTITY gitURL    "https://github.com/Greite/unraid-btop/releases/download">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/Greite/unraid-btop/main/btop.plg">
@@ -14,6 +14,8 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" icon="btop.png" min="6.12.0">
 
 <CHANGES>
+###2026.07.08
+- Update btop to v1.4.7
 ###2026.07.06a
 - Settings page (Settings > User Utilities > btop): choose what the dashboard tile shows
 - New optional tile metrics: aggregated disk I/O rates, aggregated network rates, uptime, process count
