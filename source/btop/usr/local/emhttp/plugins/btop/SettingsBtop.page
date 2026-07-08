@@ -12,7 +12,7 @@ function btop_sel($current, $value): string {
     return $current === $value ? ' selected' : '';
 }
 ?>
-<form markdown="1" method="POST" action="/update.php" target="progressFrame">
+<form markdown="1" id="btopSettingsForm" method="POST" action="/update.php" target="progressFrame">
 <input type="hidden" name="#file" value="btop/btop.cfg">
 
 _(Show load average)_:
@@ -91,3 +91,22 @@ _(Tile refresh interval)_:
   <input type="button" value="_(Done)_" onclick="done()">
   </span>
 </form>
+<script>
+(function () {
+  var form = document.getElementById('btopSettingsForm');
+  if (!form) return;
+  var procsSel = form.elements['SHOW_PROCS'];
+  var dependents = [form.elements['PROC_SORT'], form.elements['PROC_COUNT']];
+  function syncProcFields() {
+    for (var i = 0; i < dependents.length; i++) dependents[i].disabled = procsSel.value === 'no';
+  }
+  procsSel.addEventListener('change', syncProcFields);
+  form.addEventListener('submit', function () {
+    // Disabled controls are not submitted: re-enable them so /update.php keeps
+    // their values, then restore the disabled state once the form serialized
+    for (var i = 0; i < dependents.length; i++) dependents[i].disabled = false;
+    setTimeout(syncProcFields, 0);
+  });
+  syncProcFields();
+})();
+</script>

@@ -15,8 +15,11 @@ resource monitor in your terminal, plus a native dashboard tile.
 
 - **`btop` CLI** available in SSH and the Unraid web terminal, with settings
   persisted on the flash drive across reboots.
-- **Dashboard tile**: load average, CPU temperature and the top 5 processes
-  by CPU - the things the stock Unraid dashboard doesn't show.
+- **Dashboard tile**: load average, CPU temperature, uptime, process count,
+  aggregated disk and network I/O rates, and a table of the busiest
+  processes - the things the stock Unraid dashboard doesn't show. Each
+  section can be toggled and tuned (sort key, row count, refresh interval)
+  in Settings > User Utilities > btop.
 - **Fullscreen btop** in the browser (one click from the tile), served through
   Unraid's own authenticated web-terminal infrastructure.
 - **Auto-updated**: CI tracks btop releases daily, rebuilds, smoke tests and

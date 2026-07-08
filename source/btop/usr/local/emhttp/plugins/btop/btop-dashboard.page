@@ -27,18 +27,18 @@ $mytiles['btop']['column1'] = <<<EOT
   <td>
     <span class="tile-header">
       <span class="tile-header-left">
-        <img src="/plugins/btop/images/btop.png" style="width:32px;height:32px">
+        <img src="/plugins/btop/images/btop.png" alt="" style="width:32px;height:32px">
         <div class="section">_(btop)_<br>
           $btop_header
         </div>
       </span>
       <span class="tile-header-right">
         <span class="tile-header-right-controls">
-          <a href="/Settings/SettingsBtop" title="_(btop tile settings)_">
-            <i class="fa fa-fw fa-cog control"></i>
+          <a href="/Settings/SettingsBtop" title="_(btop tile settings)_" aria-label="_(btop tile settings)_">
+            <i class="fa fa-fw fa-cog control" aria-hidden="true"></i>
           </a>
-          <a href="#" id="btop-fullscreen" title="_(Open btop fullscreen)_">
-            <i class="fa fa-fw fa-expand control"></i>
+          <a href="#" id="btop-fullscreen" title="_(Open btop fullscreen)_" aria-label="_(Open btop fullscreen)_">
+            <i class="fa fa-fw fa-expand control" aria-hidden="true"></i>
           </a>
         </span>
       </span>
@@ -50,4 +50,22 @@ $btop_procs
 </tbody>
 EOT;
 ?>
+<style>
+/* tabular figures: values keep the same width between refreshes, no jitter */
+#btop-load,#btop-temp,#btop-uptime,#btop-rates,#btop-procs{font-variant-numeric:tabular-nums}
+</style>
+<script>
+window.btopTileText = {
+  load: "_(Load)_",
+  na: "_(n/a)_",
+  up: "_(Up)_",
+  procs: "_(procs)_",
+  disk: "_(Disk)_",
+  net: "_(Net)_",
+  statsUnavailable: "_(Stats unavailable)_",
+  btopUnavailable: "_(btop unavailable)_",
+  popupBlocked: "_(Popup blocked - allow popups for this server)_",
+  starting: "_(Starting btop)_"
+};
+</script>
 <script src="/plugins/btop/scripts/btop-tile.js"></script>

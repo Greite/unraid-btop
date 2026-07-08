@@ -31,6 +31,17 @@ function btop_read_cpu_temp(string $hwmonRoot): ?int {
     return null;
 }
 
+function btop_display_temp_unit(string $cfgFile = '/boot/config/plugins/dynamix/dynamix.cfg'): string {
+    // Unraid's global display preference (Settings > Display Settings)
+    $ini = @parse_ini_file($cfgFile, true) ?: [];
+    return strtoupper((string)($ini['display']['unit'] ?? 'C')) === 'F' ? 'F' : 'C';
+}
+
+function btop_convert_temp(?int $celsius, string $unit): ?int {
+    if ($celsius === null) return null;
+    return $unit === 'F' ? (int)round($celsius * 9 / 5 + 32) : $celsius;
+}
+
 function btop_sample_procs(string $procRoot): array {
     $sample = [];
     foreach (glob("$procRoot/[0-9]*", GLOB_ONLYDIR) ?: [] as $dir) {

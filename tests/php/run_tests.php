@@ -18,6 +18,15 @@ check('loadavg missing file', null, btop_read_loadavg("$fx/does_not_exist"));
 check('cpu temp from coretemp package sensor', 52, btop_read_cpu_temp("$fx/hwmon_intel"));
 check('cpu temp with no known sensor', null, btop_read_cpu_temp("$fx/hwmon_none"));
 
+// --- temperature display unit (Unraid Settings > Display Settings) ---
+check('temp unit F from dynamix cfg', 'F', btop_display_temp_unit("$fx/dynamix_f.cfg"));
+check('temp unit C from dynamix cfg', 'C', btop_display_temp_unit("$fx/dynamix_c.cfg"));
+check('temp unit defaults to C without cfg', 'C', btop_display_temp_unit("$fx/does_not_exist.cfg"));
+check('temp unit invalid value falls back to C', 'C', btop_display_temp_unit("$fx/dynamix_bad.cfg"));
+check('temp converted to fahrenheit', 126, btop_convert_temp(52, 'F'));
+check('temp kept in celsius', 52, btop_convert_temp(52, 'C'));
+check('temp null passthrough', null, btop_convert_temp(null, 'F'));
+
 $s0 = btop_sample_procs("$fx/proc_t0");
 $s1 = btop_sample_procs("$fx/proc_t1");
 check('kernel thread excluded', false, isset($s0[300]));

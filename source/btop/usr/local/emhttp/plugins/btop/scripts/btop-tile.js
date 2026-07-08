@@ -1,13 +1,36 @@
 (function () {
   'use strict';
+  var L = window.btopTileText || {}; // translated labels injected by btop-dashboard.page
+  function t(key, fallback) { return L[key] || fallback; }
+
   var refreshMs = 3000; // overridden by the refresh_ms of the first response
   var timer = null;
+  var failures = 0;     // consecutive stats.php failures
+  var fsBusy = false;   // a fullscreen session request is in flight
+
+  // Order matters: error messages land in the first section that exists
+  var DATA_IDS = ['btop-rates', 'btop-procs', 'btop-load', 'btop-uptime', 'btop-temp'];
 
   function el(id) { return document.getElementById(id); }
 
   function setText(id, text) {
     var e = el(id);
     if (e) e.textContent = text;
+  }
+
+  function firstDataEl() {
+    for (var i = 0; i < DATA_IDS.length; i++) {
+      var e = el(DATA_IDS[i]);
+      if (e) return e;
+    }
+    return null;
+  }
+
+  function markStale(stale) {
+    for (var i = 0; i < DATA_IDS.length; i++) {
+      var e = el(DATA_IDS[i]);
+      if (e) e.style.opacity = stale ? '0.55' : '';
+    }
   }
 
   function fmtMem(bytes) {
@@ -42,31 +65,35 @@
   }
 
   function render(data) {
+    failures = 0;
+    markStale(false);
     if ('load' in data) {
-      setText('btop-load', data.load
-        ? 'Load: ' + data.load.map(function (v) { return v.toFixed(2); }).join(' ')
-        : 'Load: n/a');
+      setText('btop-load', t('load', 'Load') + ': ' + (data.load
+        ? data.load.map(function (v) { return v.toFixed(2); }).join(' ')
+        : t('na', 'n/a')));
     }
     if ('cpu_temp' in data) {
-      setText('btop-temp', data.cpu_temp === null ? '' : ' · CPU ' + data.cpu_temp + '°C');
+      setText('btop-temp', data.cpu_temp === null
+        ? ''
+        : ' · CPU ' + data.cpu_temp + '°' + (data.temp_unit || 'C'));
     }
     if ('uptime' in data || 'nprocs' in data) {
       var bits = [];
-      if (data.uptime != null) bits.push('Up ' + fmtUptime(data.uptime));
-      if (data.nprocs != null) bits.push(data.nprocs + ' procs');
+      if (data.uptime != null) bits.push(t('up', 'Up') + ' ' + fmtUptime(data.uptime));
+      if (data.nprocs != null) bits.push(data.nprocs + ' ' + t('procs', 'procs'));
       setText('btop-uptime', bits.length ? ' · ' + bits.join(' · ') : '');
     }
     if ('diskio' in data || 'net' in data) {
       var rates = [];
       if ('diskio' in data) {
         rates.push(data.diskio
-          ? 'Disk R ' + fmtRate(data.diskio.read_bps) + ' · W ' + fmtRate(data.diskio.write_bps)
-          : 'Disk n/a');
+          ? t('disk', 'Disk') + ' R ' + fmtRate(data.diskio.read_bps) + ' · W ' + fmtRate(data.diskio.write_bps)
+          : t('disk', 'Disk') + ' ' + t('na', 'n/a'));
       }
       if ('net' in data) {
         rates.push(data.net
-          ? 'Net ↓ ' + fmtRate(data.net.rx_bps) + ' · ↑ ' + fmtRate(data.net.tx_bps)
-          : 'Net n/a');
+          ? t('net', 'Net') + ' ↓ ' + fmtRate(data.net.rx_bps) + ' · ↑ ' + fmtRate(data.net.tx_bps)
+          : t('net', 'Net') + ' ' + t('na', 'n/a'));
       }
       setText('btop-rates', rates.join('   '));
     }
@@ -83,12 +110,15 @@
   }
 
   function showError() {
-    setText('btop-procs', 'Stats unavailable');
-    setText('btop-rates', 'Stats unavailable');
+    failures++;
+    markStale(true);          // last values stay visible but dimmed
+    if (failures < 2) return; // a single miss may be transient: dim only
+    var target = firstDataEl();
+    if (target) target.textContent = t('statsUnavailable', 'Stats unavailable');
   }
 
   function showSessionError(msg) {
-    var target = el('btop-procs') || el('btop-rates') || el('btop-load');
+    var target = firstDataEl();
     if (target) target.textContent = msg;
   }
 
@@ -105,24 +135,69 @@
     timer = setInterval(tick, refreshMs);
   }
 
+  function setFsIcon(spinning) {
+    var link = el('btop-fullscreen');
+    var icon = link ? link.querySelector('i') : null;
+    if (!icon) return;
+    icon.classList.toggle('fa-expand', !spinning);
+    icon.classList.toggle('fa-circle-o-notch', spinning);
+    icon.classList.toggle('fa-spin', spinning);
+  }
+
+  function navigateTerminal(win) {
+    // Reuse the window if it already shows the terminal: reloading it would
+    // disconnect the single-client ttyd session (-m 1) and terminate it (-o)
+    var showing = false;
+    try { showing = win.location.pathname.indexOf('/logterminal/btop') === 0; } catch (err) { /* navigate below */ }
+    if (showing) win.focus();
+    else win.location = '/logterminal/btop/';
+  }
+
   function openFullscreen(e) {
     e.preventDefault();
+    if (fsBusy) return;
+    fsBusy = true;
+    // Open the window synchronously on the click: calling window.open() from
+    // the fetch callback loses the user activation and gets popup-blocked
+    // (always on Safari, elsewhere when the server takes a few seconds)
+    var win = window.open('', 'btop', 'width=1280,height=800');
+    if (win) {
+      try {
+        if (win.location.href === 'about:blank') {
+          win.document.title = 'btop';
+          win.document.body.textContent = t('starting', 'Starting btop') + '…';
+          win.document.body.style.cssText = 'background:#1b1d1e;color:#ddd;font-family:sans-serif;padding:1em';
+        }
+      } catch (err) { /* placeholder is cosmetic */ }
+    }
+    setFsIcon(true);
+
+    function fail(msg) {
+      if (win) { try { win.close(); } catch (err) { /* already closed */ } }
+      showSessionError(msg);
+    }
+
     fetch('/plugins/btop/include/start_session.php', { method: 'POST' })
       .then(function (r) { return r.json(); })
       .then(function (res) {
         if (res.ok || res.status === 'busy') {
-          window.open('/logterminal/btop/', 'btop', 'width=1280,height=800');
+          if (win) navigateTerminal(win);
+          else fail(t('popupBlocked', 'Popup blocked - allow popups for this server'));
         } else {
-          showSessionError(res.error || 'btop unavailable');
+          fail(res.error || t('btopUnavailable', 'btop unavailable'));
         }
       })
-      .catch(function () { showSessionError('btop unavailable'); });
+      .catch(function () { fail(t('btopUnavailable', 'btop unavailable')); })
+      .then(function () { setFsIcon(false); fsBusy = false; });
   }
 
   function init() {
     var fs = el('btop-fullscreen');
     if (!fs) return;
     fs.addEventListener('click', openFullscreen);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) tick(); // refresh right away when the tab comes back
+    });
     tick();
     startTimer();
   }

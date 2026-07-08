@@ -11,7 +11,11 @@ header('Cache-Control: no-store');
 $out = ['refresh_ms' => $cfg['REFRESH_MS']];
 
 if ($cfg['SHOW_LOAD'] === 'yes') $out['load'] = btop_read_loadavg('/proc');
-if ($cfg['SHOW_TEMP'] === 'yes') $out['cpu_temp'] = btop_read_cpu_temp('/sys/class/hwmon');
+if ($cfg['SHOW_TEMP'] === 'yes') {
+    $unit = btop_display_temp_unit();
+    $out['cpu_temp'] = btop_convert_temp(btop_read_cpu_temp('/sys/class/hwmon'), $unit);
+    $out['temp_unit'] = $unit;
+}
 if ($cfg['SHOW_UPTIME'] === 'yes') $out['uptime'] = btop_read_uptime('/proc');
 
 $wantProcs = $cfg['SHOW_PROCS'] === 'yes';
