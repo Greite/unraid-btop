@@ -53,8 +53,12 @@ EOT;
 /* braille history sparklines (rendered by btop-tile.js), btop's own idiom */
 #btop-rates .btop-spark{opacity:.75;margin-right:.4em}
 #btop-rates .btop-rate-group+.btop-rate-group{margin-left:1.2em}
-/* long process names (full cmdline-based) ellipsize instead of wrapping */
-#btop-procs .w44{display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+/* Long process names (full argv0/cmdline) would stretch the name column past
+   the tile itself in Unraid's auto-layout tile table (issue #1). A resolved
+   max-width caps that intrinsic width so the column stays put and the overflow
+   ellipsizes; the full name lives on in the row's title tooltip. Scoped to the
+   whole tile so the header label and the rows keep the same column width. */
+#tblBtopDash .w44{display:inline-block;max-width:22ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 /* CPU temperature thresholds; colors legible on light and dark themes */
 #btop-temp.btop-temp-warn{color:#e07b00}
 #btop-temp.btop-temp-hot{color:#d32f2f}

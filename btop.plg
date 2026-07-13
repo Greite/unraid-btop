@@ -14,6 +14,7 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" icon="btop.png" min="6.12.0">
 
 <CHANGES>
+- Dashboard tile: long process names are truncated so a wide name no longer stretches the tile past its column (issue #1)
 ###2026.07.08
 - Dashboard tile: braille history sparklines on the disk and network rates, CPU and memory bars behind the process table values, CPU temperature colored above 70/85 C
 - Process table: full process names (command line based, no more 15-char kernel truncation), optional labelling by Docker container name (new setting), hovering a row shows both

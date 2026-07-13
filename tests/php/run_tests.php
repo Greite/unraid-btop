@@ -140,6 +140,15 @@ check('container name resolved (leading slash trimmed)', 'plex', btop_container_
 check('container name unknown id', null, btop_container_name(str_repeat('ff', 32), "$fx/docker"));
 check('container name malformed id rejected', null, btop_container_name('../../etc/passwd', "$fx/docker"));
 
+// --- issue #1: overlong process names are capped so the dashboard tile's
+//     name column can't stretch the tile past its width ---
+check('short name kept as-is', 'nginx', btop_truncate_name('nginx'));
+check('name at the cap kept as-is', str_repeat('a', 48), btop_truncate_name(str_repeat('a', 48)));
+check('overlong name truncated with ellipsis', str_repeat('a', 47) . '…', btop_truncate_name(str_repeat('a', 100)));
+check('truncation counts characters, not bytes (utf-8 safe)', str_repeat('é', 47) . '…', btop_truncate_name(str_repeat('é', 100)));
+$sl = btop_sample_procs("$fx/proc_longname");
+check('sampled overlong argv0 is capped to 48 chars', 48, mb_strlen($sl[700]['name']));
+
 check('top rows carry pid', 100, btop_top_procs($s0, $s1, 0.5, 5)[0]['pid']);
 
 // proc_t1: pid 200 (sshd) has a docker cgroup, pid 100 (qemu) has none

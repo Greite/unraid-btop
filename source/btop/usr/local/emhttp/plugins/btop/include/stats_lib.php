@@ -42,6 +42,15 @@ function btop_convert_temp(?int $celsius, string $unit): ?int {
     return $unit === 'F' ? (int)round($celsius * 9 / 5 + 32) : $celsius;
 }
 
+// An argv0 (or a rewritten title like "nginx: worker process") can be
+// arbitrarily long; left unbounded it stretches the dashboard tile's name
+// column far past the tile itself (issue #1). Cap it to keep the payload - and
+// the column - bounded; the tile additionally ellipsizes whatever still
+// overflows. Counts characters, not bytes, so multi-byte names stay valid UTF-8.
+function btop_truncate_name(string $name, int $max = 48): string {
+    return mb_strlen($name) > $max ? mb_substr($name, 0, $max - 1) . '…' : $name;
+}
+
 function btop_sample_procs(string $procRoot): array {
     $sample = [];
     foreach (glob("$procRoot/[0-9]*", GLOB_ONLYDIR) ?: [] as $dir) {
@@ -60,6 +69,7 @@ function btop_sample_procs(string $procRoot): array {
         // name and keeps rewritten titles ("nginx: worker process")
         $argv0 = basename(strtok($cmdline, "\0"));
         if ($argv0 !== '') $name = $argv0;
+        $name = btop_truncate_name($name);
         $fields = preg_split('/\s+/', trim(substr($stat, $close + 1)));
         // After comm: [0]=state ... [11]=utime [12]=stime ... [21]=rss (pages)
         if (count($fields) < 22) continue;
@@ -156,7 +166,7 @@ function btop_map_container_names(array $procs, string $procRoot, string $docker
         $id = btop_container_id($cgroup);
         if ($id === null) continue;
         if (!array_key_exists($id, $names)) $names[$id] = btop_container_name($id, $dockerRoot);
-        if ($names[$id] !== null) $proc['cname'] = $names[$id];
+        if ($names[$id] !== null) $proc['cname'] = btop_truncate_name($names[$id]);
     }
     return $procs;
 }
