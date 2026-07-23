@@ -39,7 +39,7 @@ $top = btop_top_procs($s0, $s1, 0.5, 5);
 check('sorted by cpu desc', 'qemu-system', $top[0]['name']);
 check('cpu percent computed', 84.0, $top[0]['cpu']); // 42 ticks / 100 Hz / 0.5 s * 100
 check('idle process has 0 cpu', 0.0, $top[1]['cpu']);
-check('process appearing between samples ignored', 2, count($top));
+check('process appearing between samples ignored', 3, count($top));
 
 $topOne = btop_top_procs($s0, $s1, 0.5, 1);
 check('top limited to n', 1, count($topOne));
@@ -151,11 +151,32 @@ check('sampled overlong argv0 is capped to 48 chars', 48, mb_strlen($sl[700]['na
 
 check('top rows carry pid', 100, btop_top_procs($s0, $s1, 0.5, 5)[0]['pid']);
 
-// proc_t1: pid 200 (sshd) has a docker cgroup, pid 100 (qemu) has none
-$mapped = btop_map_container_names(btop_top_procs($s0, $s1, 0.5, 5), "$fx/proc_t1", "$fx/docker");
-check('containerized proc gets cname', 'plex', $mapped[1]['cname'] ?? null);
-check('containerized proc keeps its process name', 'sshd', $mapped[1]['name']);
-check('host proc gets no cname', false, isset($mapped[0]['cname']));
+// proc_t1: pid 100 (qemu) has a -name guest= cmdline, pid 200 (sshd) a docker
+// cgroup, pid 600 (nginx) neither
+$mapped = btop_map_proc_labels(btop_top_procs($s0, $s1, 0.5, 5), "$fx/proc_t1", "$fx/docker");
+check('vm proc gets the VM name as cname', 'Windows 11', $mapped[0]['cname'] ?? null);
+check('vm proc keeps its process name', 'qemu-system', $mapped[0]['name']);
+check('host proc gets no cname', false, isset($mapped[1]['cname']));
+check('containerized proc gets cname', 'plex', $mapped[2]['cname'] ?? null);
+check('containerized proc keeps its process name', 'sshd', $mapped[2]['name']);
+
+// --- v4 (issue #2): VM name parsed from the qemu command line ---
+check('vm name from libvirt cmdline', 'Windows 11',
+    btop_vm_name("qemu-system-x86_64\0-name\0guest=Windows 11,debug-threads=on\0-nodefaults\0"));
+check('vm name without guest= prefix', 'mavm',
+    btop_vm_name("qemu-system-x86_64\0-name\0mavm\0"));
+check('vm name unescapes doubled commas', 'a,b',
+    btop_vm_name("qemu\0-name\0guest=a,,b,debug-threads=on\0"));
+check('vm name without -name arg', null,
+    btop_vm_name("qemu-system-x86_64\0-machine\0q35\0"));
+check('vm name with -name as last arg', null,
+    btop_vm_name("qemu-system-x86_64\0-name\0"));
+check('vm name empty guest value', null,
+    btop_vm_name("qemu\0-name\0guest=,debug-threads=on\0"));
+check('vm name three commas: escaped comma then sub-option', 'a,',
+    btop_vm_name("qemu\0-name\0guest=a,,,b\0"));
+check('vm name unprefixed with sub-options', 'mavm',
+    btop_vm_name("qemu\0-name\0mavm,debug-threads=on\0"));
 
 echo $failures === 0 ? "ALL TESTS PASSED\n" : "$failures TEST(S) FAILED\n";
 exit($failures === 0 ? 0 : 1);

@@ -71,10 +71,10 @@ _(Show process table)_:
 :end
 
 _(Label processes with)_:
-: <select name="PROC_NAMES"><option value="process"<?=btop_sel($btop_cfg['PROC_NAMES'], 'process')?>>_(Process name)_</option><option value="container"<?=btop_sel($btop_cfg['PROC_NAMES'], 'container')?>>_(Docker container name)_</option></select>
+: <select name="PROC_NAMES"><option value="process"<?=btop_sel($btop_cfg['PROC_NAMES'], 'process')?>>_(Process name)_</option><option value="container"<?=btop_sel($btop_cfg['PROC_NAMES'], 'container')?>>_(Docker container / VM name)_</option></select>
 
 :btop_proc_names_plug:
-> Labels each row of the process table with the process name, or with the name of the Docker container the process runs in. Processes running outside any container keep their process name; hovering a row always shows both.
+> Labels each row of the process table with the process name, or with the name of the Docker container or virtual machine the process belongs to. Processes matching neither keep their process name; hovering a row always shows both.
 :end
 
 _(Sort processes by)_:

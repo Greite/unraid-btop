@@ -108,7 +108,7 @@
     var w44 = document.createElement('span'); w44.className = 'w44';
     var c18 = document.createElement('span'); c18.className = 'w18';
     var m18 = document.createElement('span'); m18.className = 'w18';
-    // cname = Docker container name, sent when the "container" labelling is on
+    // cname = Docker container or VM name, sent when the "container" labelling is on
     w44.textContent = p.cname || p.name; // textContent: names are untrusted
     w44.title = p.cname ? p.cname + ' · ' + p.name : p.name;
     c18.textContent = p.cpu.toFixed(1) + '%';

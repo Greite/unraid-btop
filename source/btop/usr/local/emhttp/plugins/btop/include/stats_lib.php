@@ -140,10 +140,28 @@ function btop_sample_net(string $sysRoot): ?array {
     return $found ? ['rx' => $rx, 'tx' => $tx] : null;
 }
 
-/* Docker container mapping. A containerized process shows up under its inner
-   name ("ffmpeg", "node") which means little on an Unraid box; the container
-   name ("plex") is the actionable label. The container id comes from the
-   process cgroup, the name from Docker's own metadata - no docker CLI call. */
+/* VM name from a qemu command line: libvirt always passes
+   -name guest=<name>,debug-threads=on (issue #2). */
+
+function btop_vm_name(string $cmdline): ?string {
+    $args = explode("\0", $cmdline);
+    $i = array_search('-name', $args, true);
+    if ($i === false || !isset($args[$i + 1])) return null;
+    $val = $args[$i + 1];
+    if (strncmp($val, 'guest=', 6) === 0) $val = substr($val, 6);
+    // Sub-options start at the first single comma (",debug-threads=on");
+    // libvirt escapes commas inside VM names by doubling them
+    preg_match('/^(?:[^,]|,,)*/', $val, $m);
+    $name = str_replace(',,', ',', $m[0]);
+    return $name !== '' ? $name : null;
+}
+
+/* Container / VM labels. A containerized process shows up under its inner
+   name ("ffmpeg", "node") and every VM under "qemu-system-x86_64" - neither
+   means much on an Unraid box. The actionable label is the container name
+   ("plex") or the VM name ("Windows 11"). The container id comes from the
+   process cgroup and its name from Docker's own metadata (no docker CLI
+   call); the VM name from the qemu command line (btop_vm_name above). */
 
 function btop_container_id(string $cgroup): ?string {
     // cgroup v2: 0::/docker/<id> ; v1: N:ctrl:/docker/<id> ; systemd: docker-<id>.scope
@@ -158,15 +176,22 @@ function btop_container_name(string $id, string $dockerRoot): ?string {
     return is_string($name) && $name !== '' ? ltrim($name, '/') : null;
 }
 
-function btop_map_container_names(array $procs, string $procRoot, string $dockerRoot): array {
+function btop_map_proc_labels(array $procs, string $procRoot, string $dockerRoot): array {
     $names = []; // id -> name, resolved once even if several procs share a container
     foreach ($procs as &$proc) {
         $cgroup = @file_get_contents("$procRoot/{$proc['pid']}/cgroup");
         if ($cgroup === false) continue; // process already gone
         $id = btop_container_id($cgroup);
-        if ($id === null) continue;
-        if (!array_key_exists($id, $names)) $names[$id] = btop_container_name($id, $dockerRoot);
-        if ($names[$id] !== null) $proc['cname'] = btop_truncate_name($names[$id]);
+        if ($id !== null) {
+            if (!array_key_exists($id, $names)) $names[$id] = btop_container_name($id, $dockerRoot);
+            if ($names[$id] !== null) $proc['cname'] = btop_truncate_name($names[$id]);
+            continue;
+        }
+        if (strncmp($proc['name'], 'qemu-system', 11) !== 0) continue;
+        $cmdline = @file_get_contents("$procRoot/{$proc['pid']}/cmdline");
+        if ($cmdline === false) continue;
+        $vm = btop_vm_name($cmdline);
+        if ($vm !== null) $proc['cname'] = btop_truncate_name($vm);
     }
     return $procs;
 }
