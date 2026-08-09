@@ -5,8 +5,7 @@ plugin is only an Unraid integration of it.
 
 Installs the btop resource monitor CLI and adds a dashboard tile showing
 load average, CPU temperature and the top 5 processes by CPU usage.
-Click the expand icon on the tile to open the full interactive btop in
-your browser, or run `btop` from any terminal (SSH or web terminal).
+Run `btop` from any terminal (SSH or web terminal).
 
 Notes:
 - Do not install alongside the NerdTools btop package (both ship /usr/bin/btop).

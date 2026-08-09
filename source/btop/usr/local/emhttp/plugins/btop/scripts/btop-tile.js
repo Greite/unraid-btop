@@ -1,7 +1,7 @@
 (function () {
   'use strict';
-  var L = window.btopTileText || {}; // translated labels injected by btop-dashboard.page
-  function t(key, fallback) { return L[key] || fallback; }
+  // Translated labels, inlined by btop-dashboard.page before this script loads
+  var L = window.btopTileText;
 
   var refreshMs = 3000; // overridden by the refresh_ms of the first response
   var timer = null;
@@ -123,9 +123,9 @@
     failures = 0;
     markStale(false);
     if ('load' in data) {
-      setText('btop-load', t('load', 'Load') + ': ' + (data.load
+      setText('btop-load', L.load + ': ' + (data.load
         ? data.load.map(function (v) { return v.toFixed(2); }).join(' ')
-        : t('na', 'n/a')));
+        : L.na));
     }
     if ('cpu_temp' in data) {
       var temp = el('btop-temp');
@@ -142,8 +142,8 @@
     }
     if ('uptime' in data || 'nprocs' in data) {
       var bits = [];
-      if (data.uptime != null) bits.push(t('up', 'Up') + ' ' + fmtUptime(data.uptime));
-      if (data.nprocs != null) bits.push(data.nprocs + ' ' + t('procs', 'procs'));
+      if (data.uptime != null) bits.push(L.up + ' ' + fmtUptime(data.uptime));
+      if (data.nprocs != null) bits.push(data.nprocs + ' ' + L.procs);
       setText('btop-uptime', bits.length ? ' · ' + bits.join(' · ') : '');
     }
     if ('diskio' in data || 'net' in data) {
@@ -153,19 +153,19 @@
         if ('diskio' in data) {
           if (data.diskio) {
             pushHist(hist.disk, data.diskio.read_bps + data.diskio.write_bps);
-            groups.push(rateGroup(hist.disk, t('disk', 'Disk')
+            groups.push(rateGroup(hist.disk, L.disk
               + ' ↓ ' + fmtRate(data.diskio.read_bps) + ' · ↑ ' + fmtRate(data.diskio.write_bps)));
           } else {
-            groups.push(rateGroup(null, t('disk', 'Disk') + ' ' + t('na', 'n/a')));
+            groups.push(rateGroup(null, L.disk + ' ' + L.na));
           }
         }
         if ('net' in data) {
           if (data.net) {
             pushHist(hist.net, data.net.rx_bps + data.net.tx_bps);
-            groups.push(rateGroup(hist.net, t('net', 'Net')
+            groups.push(rateGroup(hist.net, L.net
               + ' ↓ ' + fmtRate(data.net.rx_bps) + ' · ↑ ' + fmtRate(data.net.tx_bps)));
           } else {
-            groups.push(rateGroup(null, t('net', 'Net') + ' ' + t('na', 'n/a')));
+            groups.push(rateGroup(null, L.net + ' ' + L.na));
           }
         }
         box.replaceChildren.apply(box, groups);
@@ -191,7 +191,7 @@
     markStale(true);          // last values stay visible but dimmed
     if (failures < 2) return; // a single miss may be transient: dim only
     var target = firstDataEl();
-    if (target) target.textContent = t('statsUnavailable', 'Stats unavailable');
+    if (target) target.textContent = L.statsUnavailable;
   }
 
   function tick() {

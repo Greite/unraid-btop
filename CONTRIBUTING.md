@@ -27,7 +27,7 @@ bash scripts/test_php_syntax.sh               # php -l on all php/page files
   `<CHANGES>` section are **bumped by CI - never edit them manually**.
 - `source/btop/usr/local/emhttp/plugins/btop/` - webgui files: dashboard tile
   (`btop-dashboard.page` + `scripts/btop-tile.js`) and PHP endpoints
-  (`include/stats.php`, `include/start_session.php`, `include/stats_lib.php`).
+  (`include/stats.php`, `include/stats_lib.php`).
 - `scripts/` - build and test scripts.
 - `tests/php/` - fixture-based unit tests for the stats library.
 - `.github/workflows/` - CI (`ci.yml`), automated releases (`release.yml`),

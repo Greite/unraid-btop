@@ -67,9 +67,6 @@ echo "----------------------------------------------------"
 
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
-# Kill the fullscreen ttyd session if any
-pkill -f '/var/tmp/btop\.sock' 2>/dev/null
-sleep 1
 removepkg &package;
 rm -rf &emhttp;
 rm -f /root/.config/btop

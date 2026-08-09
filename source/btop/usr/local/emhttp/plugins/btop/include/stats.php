@@ -62,7 +62,7 @@ if ($wanted) {
         $rates = [];
         if ($wantProcs) {
             $rates['procs'] = btop_top_procs($prevSamples['procs'] ?? [], $samples['procs'],
-                $elapsed, $cfg['PROC_COUNT'], 100, $cfg['PROC_SORT']);
+                $elapsed, $cfg['PROC_COUNT'], $cfg['PROC_SORT']);
             if ($cfg['PROC_NAMES'] === 'container') {
                 $rates['procs'] = btop_map_proc_labels($rates['procs'], '/proc', '/var/lib/docker');
             }

@@ -82,13 +82,13 @@ function btop_sample_procs(string $procRoot): array {
     return $sample;
 }
 
-function btop_top_procs(array $s0, array $s1, float $elapsed, int $n = 5, int $clkTck = 100, string $sort = 'cpu'): array {
+function btop_top_procs(array $s0, array $s1, float $elapsed, int $n = 5, string $sort = 'cpu'): array {
     $out = [];
     foreach ($s1 as $pid => $proc) {
         if (!isset($s0[$pid])) continue; // appeared between samples
         // A negative delta means the pid was reused by a new process
-        $delta = max(0, $proc['ticks'] - $s0[$pid]['ticks']);
-        $cpu = $elapsed > 0 ? round($delta / $clkTck / $elapsed * 100, 1) : 0.0;
+        // 100 = USER_HZ, fixed on every x86_64 Linux kernel Unraid ships
+        $cpu = $elapsed > 0 ? round(max(0, $proc['ticks'] - $s0[$pid]['ticks']) / 100 / $elapsed * 100, 1) : 0.0;
         $out[] = ['pid' => $pid, 'name' => $proc['name'], 'cpu' => $cpu, 'mem' => $proc['rss']];
     }
     if ($sort === 'mem') {

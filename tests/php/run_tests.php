@@ -66,7 +66,7 @@ check('net no physical interface', null, btop_sample_net("$fx/sys_net_none"));
 $a0 = [1 => ['name' => 'cpuhog', 'ticks' => 0, 'rss' => 4096], 2 => ['name' => 'memhog', 'ticks' => 0, 'rss' => 999424]];
 $a1 = [1 => ['name' => 'cpuhog', 'ticks' => 50, 'rss' => 4096], 2 => ['name' => 'memhog', 'ticks' => 1, 'rss' => 999424]];
 check('sort cpu (default) unchanged', 'cpuhog', btop_top_procs($a0, $a1, 0.5)[0]['name']);
-check('sort mem puts memhog first', 'memhog', btop_top_procs($a0, $a1, 0.5, 5, 100, 'mem')[0]['name']);
+check('sort mem puts memhog first', 'memhog', btop_top_procs($a0, $a1, 0.5, 5, 'mem')[0]['name']);
 
 // --- v2: config validation ---
 check('cfg defaults (empty input)', [
