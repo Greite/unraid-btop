@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "btop">
   <!ENTITY author    "GreiteTurtle">
-  <!ENTITY version   "2026.07.23">
-  <!ENTITY md5       "0bb716b16410e1a9acfee3273f133b2b">
+  <!ENTITY version   "2026.10.25">
+  <!ENTITY md5       "f04e36c46b703f1888205f8ea5bc01ce">
   <!ENTITY package   "unraid.btop-&version;-x86_64-1">
   <!ENTITY gitURL    "https://github.com/Greite/unraid-btop/releases/download">
   <!ENTITY pluginURL "https://raw.githubusercontent.com/Greite/unraid-btop/main/btop.plg">
@@ -14,6 +14,8 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&pluginURL;" icon="btop.png" min="6.12.0">
 
 <CHANGES>
+###2026.10.25
+- Update btop to v1.4.8
 ###2026.07.23
 - Update btop to v1.4.7
 - Process table: qemu processes are labeled with their VM name (parsed from the qemu command line) when container labeling is on, so multiple VMs are no longer indistinguishable "qemu-system-x86_64" rows (issue #2)
